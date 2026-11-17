@@ -27,8 +27,8 @@
 }
 /* Hovered/focused bar stays full while the rest dim. */
 .fp-dim .fp-bar { opacity: 0.35; }
-.fp-dim .fp-bar:hover,
-.fp-dim .fp-bar:focus { opacity: 1; }
+.fp-dim .fp-slot:hover .fp-bar,
+.fp-dim .fp-slot:focus .fp-bar { opacity: 1; }
 
 /* Mono readout above the strip: defaults to the top project, follows hover/focus. */
 .fp-readout {

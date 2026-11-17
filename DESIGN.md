@@ -74,7 +74,7 @@ No horizontal scroll at 360px wide.
    tooltip on hover, click opens the card. Legend with the three categories.
 6. `#trajectory` "Trajectory": time axis from 2025-01 to asOf, with a "↑ N" counter of
    projects from the last 12 months in the header. Top lane: roles held since 2025 as
-   neutral bands labelled with the org (current role outlined). Below: cumulative count of public projects as a step line in
+   neutral bands labelled with the org (current role filled in ink in light mode, outlined in dark mode). Below: cumulative count of public projects as a step line in
    ink; each project is a dot on the step where it was created, coloured by category.
    Crosshair tooltip with date, count and the project created then. The line draws left to
    right when visible.

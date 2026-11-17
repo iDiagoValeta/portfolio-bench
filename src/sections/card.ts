@@ -138,8 +138,16 @@ function fill(p: Project): void {
   langsEl.innerHTML = '';
   if (p.languages.length === 0) {
     langsEl.append(h('p', { class: 'cd-lang-empty' }, 'No language data'));
-    return;
+  } else {
+    fillLanguages(p);
   }
+
+  fillLinks(p);
+  focusables = Array.from(drawer.querySelectorAll<HTMLElement>('button, a[href]'));
+}
+
+// Split out so an empty language list can never skip the links and the focus list below it.
+function fillLanguages(p: Project): void {
   // Percentages are over the whole repo (all languages), not only the top 4.
   const total = p.languages.reduce((sum, l) => sum + l.bytes, 0) || 1;
   const top = p.languages.slice(0, 4);
@@ -173,7 +181,9 @@ function fill(p: Project): void {
     );
   }
   langsEl.append(bar, legend);
+}
 
+function fillLinks(p: Project): void {
   linksEl.innerHTML = '';
   linksEl.append(
     h('a', { class: 'pill', href: p.repoUrl, target: '_blank', rel: 'noopener' }, 'Repository ↗'),
@@ -181,8 +191,6 @@ function fill(p: Project): void {
   if (p.url) {
     linksEl.append(h('a', { class: 'pill', href: p.url, target: '_blank', rel: 'noopener' }, 'Live site ↗'));
   }
-
-  focusables = Array.from(drawer.querySelectorAll<HTMLElement>('button, a[href]'));
 }
 
 function onKeydown(e: KeyboardEvent): void {

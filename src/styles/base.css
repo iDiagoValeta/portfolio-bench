@@ -200,9 +200,8 @@ h2 .section-marker { display: inline-block; }
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.4;
-  max-width: 320px;
+  max-width: min(320px, calc(100vw - 16px));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  white-space: nowrap;
 }
 .tooltip[hidden] { display: none; }
 
