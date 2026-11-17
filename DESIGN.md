@@ -55,37 +55,43 @@ No horizontal scroll at 360px wide.
    colours plus ink), links to the sections, theme toggle, "CV" pill (links to `profile.links.cv`).
 2. `#hero`: eyebrow `Independent benchmarks · data as of <asOf>` in mono. h1 serif:
    "Independent analysis of *one* AI engineer." (italic on "one"). Sub: `profile.tagline` +
-   role and location. Two pills: "Explore the index" (anchor) and "Download CV".
-   Below, the **fingerprint**: one thin vertical bar per project (all projects), height =
-   index, colour = category, sorted by creation date, growing in sequence on load; hover
-   shows project name and index; click opens the model card.
-3. Headline tiles: the three `profile.headlines` as cards (big serif number + unit, label,
-   small source chip). Count up once when visible.
+   role and location. Two pills: "Explore the index" (anchor) and "CV (PDF)".
+   Below, the **fingerprint**: one slim rounded bar per project (all projects), height =
+   index, colour = category, sorted by creation date, growing in sequence on load. A mono
+   readout above it shows the top project by default and the hovered or focused one
+   (title, category, index, rank); click opens the model card.
+3. Headline tiles, inside the hero: the three `profile.headlines` in one card split into
+   three columns (big serif number + unit, label, source). Count up once when visible.
 4. `#index` "Engineering Index": horizontal bar leaderboard. Toolbar in one row: metric
    tabs (Index, Commits, Stars, Craft) and category chips (All + the three, each with its
    colour square). Top 12 by default, "Show all" expands. Bar label left (project title),
    value at the bar end in mono. Bars 4px rounded at the end, 2px gap. Tooltip on hover,
    click opens the model card. Colour follows the project's category even when filtered.
 5. `#effort` "Index vs. effort": scatter, x = commits (log scale), y = index (0 to 100).
-   Shaded quadrant top-left labelled "Most efficient" (high index, low effort). Dots 9px with
-   a 2px surface ring, colour = category, direct labels on the 6 highest-index projects,
+   Faint quadrant top-left of the dashed medians, labelled "Most efficient" (high index, low
+   effort). Dots with a 2px surface ring, colour = category, direct labels on the 6
+   highest-index projects (3 under 640px),
    tooltip on hover, click opens the card. Legend with the three categories.
-6. `#trajectory` "Trajectory": time axis from 2022-01 to asOf. Top lane: experience roles as
-   neutral bands with labels. Below: cumulative count of public projects as a step line in
+6. `#trajectory` "Trajectory": time axis from 2025-01 to asOf, with a "↑ N" counter of
+   projects from the last 12 months in the header. Top lane: roles held since 2025 as
+   neutral bands labelled with the org (current role outlined). Below: cumulative count of public projects as a step line in
    ink; each project is a dot on the step where it was created, coloured by category.
    Crosshair tooltip with date, count and the project created then. The line draws left to
    right when visible.
 7. `#projects` "All projects": the table view of the same data, sortable by any column:
    rank, project (title + repo), category (square + label), index, commits, stars, updated
-   (relative time), flags (Local, Production). Row click opens the card.
+   (relative time), flags (Local, Production). Top 10 with "Show all"; under 640px only
+   rank, project and index remain. Row click opens the card.
 8. `#experience` "Changelog": experience as a vertical changelog (date range in mono, role,
    org and place, note), then education.
 9. `#methodology` + footer: the index formula in plain words, the data date, contact links
    (email, GitHub, LinkedIn, Hugging Face, CV).
 
 **Model card** (drawer from the right, full screen under 640px; Esc and backdrop close it,
-focus is trapped and restored): title, category, one-liner, stack chips, flags, the index
-with its three components as small bars, raw metrics (commits, stars, created, last push,
+focus is trapped and restored, the page behind is inert and does not scroll; `#p/<repo>`
+deep-links to it): title, category, one-liner, stack chips, flags, the index with a mini
+fingerprint locating the project among the rest and its three components as small bars, the
+seven checks, raw metrics (commits, stars, created, last push,
 languages as a thin stacked bar with labels), and links (repository, live site).
 
 ## Methodology (computed in `scripts/build-data.mjs`)
