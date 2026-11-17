@@ -56,7 +56,8 @@ function fill(p: Project): void {
   for (const s of p.stack) stackEl.append(h('span', { class: 'chip' }, s));
 
   flagsEl.innerHTML = '';
-  for (const f of p.flags) flagsEl.append(h('span', { class: 'pill cd-flag' }, flagLabel(f)));
+  // 'featured' is a curation hint, not a property of the project, so the card does not show it.
+  for (const f of p.flags.filter((x) => x !== 'featured')) flagsEl.append(h('span', { class: 'pill cd-flag' }, flagLabel(f)));
 
   scoreNumEl.textContent = String(p.index);
 
