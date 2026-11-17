@@ -92,7 +92,13 @@
   border-radius: 2px;
   transition: width 500ms ease;
 }
-.t-index-val { vertical-align: middle; }
+.t-index-val {
+  display: inline-block;
+  width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
 
 .t-updated { color: var(--ink-2); white-space: nowrap; }
 
@@ -147,9 +153,12 @@
   .t-table th:nth-child(6),
   .t-table td:nth-child(6),
   .t-table th:nth-child(7),
-  .t-table td:nth-child(7) {
+  .t-table td:nth-child(7),
+  .t-table th:nth-child(8),
+  .t-table td:nth-child(8) {
     display: none;
   }
+  .t-repo { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

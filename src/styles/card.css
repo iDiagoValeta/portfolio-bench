@@ -91,11 +91,32 @@
 }
 
 .cd-score-row { display: flex; align-items: center; gap: 20px; }
+.cd-score-mark {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
 .cd-score-num {
   font-family: 'Instrument Serif', Georgia, serif;
   font-size: 3.4rem;
   line-height: 1;
   color: var(--ink);
+}
+/* Mini fingerprint under the big index: one 2px mark per project. */
+.cd-fp {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 8px;
+}
+.cd-fp-mark {
+  display: block;
+  width: 2px;
+  height: 8px;
+  flex: 0 0 2px;
+  border-radius: 1px;
+  background: var(--line);
 }
 .cd-bars {
   flex: 1;

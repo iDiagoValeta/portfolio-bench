@@ -79,7 +79,7 @@ No horizontal scroll at 360px wide.
    rank, project (title + repo), category (square + label), index, commits, stars, updated
    (relative time), flags (Local, Production). Row click opens the card.
 8. `#experience` "Changelog": experience as a vertical changelog (date range in mono, role,
-   org and place, note), then education, then skills as quiet chips.
+   org and place, note), then education.
 9. `#methodology` + footer: the index formula in plain words, the data date, contact links
    (email, GitHub, LinkedIn, Hugging Face, CV).
 

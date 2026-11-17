@@ -24,6 +24,7 @@ let linerEl: HTMLElement;
 let stackEl: HTMLElement;
 let flagsEl: HTMLElement;
 let scoreNumEl: HTMLElement;
+let fpEl: HTMLElement;
 let barsEl: HTMLElement;
 let checksEl: HTMLElement;
 let metricsEl: HTMLElement;
@@ -58,6 +59,26 @@ function fill(p: Project): void {
   for (const f of p.flags) flagsEl.append(h('span', { class: 'pill cd-flag' }, flagLabel(f)));
 
   scoreNumEl.textContent = String(p.index);
+
+  // Mini fingerprint: one slim mark per project, ordered by first commit like
+  // the hero strip. Every mark is --line except this project's, in its category
+  // colour. No text is added; the rank lives in the aria-label.
+  const byDate = [...dataset.projects].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
+  // Rank means position on the index, as in the hero readout; data.projects is sorted by index.
+  const rank = dataset.projects.findIndex((x) => x.repo === p.repo) + 1;
+  fpEl.innerHTML = '';
+  fpEl.setAttribute('aria-label', `Rank ${rank} of ${byDate.length} on the index`);
+  for (const s of byDate) {
+    fpEl.append(
+      h('i', {
+        class: 'cd-fp-mark',
+        style: s.repo === p.repo ? `background:var(--cat-${s.category})` : undefined,
+      }),
+    );
+  }
+
   barsEl.innerHTML = '';
   const components: [string, number][] = [
     ['Craft', p.craft],
@@ -266,6 +287,7 @@ export function initCard(root: HTMLElement, data: Dataset): void {
   stackEl = h('div', { class: 'cd-chips' });
   flagsEl = h('div', { class: 'cd-flags' });
   scoreNumEl = h('div', { class: 'cd-score-num' });
+  fpEl = h('div', { class: 'cd-fp', role: 'img', 'aria-label': '' });
   barsEl = h('div', { class: 'cd-bars' });
   checksEl = h('ul', { class: 'cd-checks' });
   metricsEl = h('div', { class: 'cd-metrics' });
@@ -276,7 +298,7 @@ export function initCard(root: HTMLElement, data: Dataset): void {
     'section',
     { class: 'cd-section' },
     h('div', { class: 'cd-label' }, 'Engineering index'),
-    h('div', { class: 'cd-score-row' }, scoreNumEl, barsEl),
+    h('div', { class: 'cd-score-row' }, h('div', { class: 'cd-score-mark' }, scoreNumEl, fpEl), barsEl),
   );
   const checksSection = h(
     'section',

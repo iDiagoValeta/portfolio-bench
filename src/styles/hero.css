@@ -9,13 +9,18 @@
   stroke: var(--line);
   stroke-width: 1;
 }
+.fp-slot {
+  cursor: pointer;
+  outline: none;
+}
 .fp-bar {
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
 /* Focus ring drawn as a path stroke: outlines on SVG shapes are inconsistent
    across browsers, a 1px stroke always renders. */
-.fp-bar:focus {
+.fp-bar:focus,
+.fp-slot:focus .fp-bar {
   outline: none;
   stroke: var(--ink);
   stroke-width: 1;
@@ -89,7 +94,6 @@
 }
 .tile-unit {
   font-size: 11px;
-  text-transform: uppercase;
   color: var(--ink-3);
 }
 .tile-label { font-size: 14px; }

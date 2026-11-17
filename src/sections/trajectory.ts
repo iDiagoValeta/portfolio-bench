@@ -68,7 +68,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   // The whole as-of day counts: a project created that day stays inside the domain.
   const asOf = asOfDate(data.asOf);
 
-  // --- trend tile ---
+  // --- trend tile: lives in the section's h2 row, not loose above the chart ---
   const cutoff = new Date(asOf);
   cutoff.setUTCMonth(cutoff.getUTCMonth() - 12);
   const recentCount = data.projects.filter((p) => {
@@ -80,8 +80,17 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     h('span', { class: 'tr-tile-num' }, `↑ ${recentCount}`),
     h('span', { class: 'tr-tile-lab mono' }, 'public projects in the last 12 months'),
   );
-  const head = h('div', { class: 'tr-head' }, tile);
-  root.append(head);
+  const title = el.closest('section')?.querySelector('h2');
+  const titleParent = title?.parentElement;
+  if (title && titleParent) {
+    // Insert the empty row at the heading's spot, then move the heading into
+    // it. Appending the heading first would detach it and break insertBefore.
+    const head = h('div', { class: 'tr-head' });
+    titleParent.insertBefore(head, title);
+    head.append(title, tile);
+  } else {
+    root.append(h('div', { class: 'tr-head' }, tile));
+  }
 
   // --- experience rows (greedy stacking) ---
   const exps = profile.experience
@@ -180,6 +189,11 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   }
   const pathEl = svg('path', { class: 'tr-line' });
   lineG.append(pathEl);
+
+  // Optional: the final cumulative count sits at the end of the step line.
+  const endLabel = svg('text', { class: 'tr-end-label' });
+  endLabel.textContent = String(sortedProjects.length);
+  lineG.append(endLabel);
 
   // dots
   const dotItems: { circle: SVGCircleElement; project: (typeof sortedProjects)[number]; count: number }[] = [];
@@ -325,6 +339,19 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     } else {
       pathEl.style.strokeDasharray = '';
       pathEl.style.strokeDashoffset = '0';
+    }
+
+    // End-of-line cumulative count, kept inside the canvas.
+    if (points.length > 1) {
+      const last = points[points.length - 1];
+      const lx = xScale(last.date);
+      const ly = yScale(last.count);
+      const toLeft = lx > width - 44;
+      endLabel.setAttribute('x', String(toLeft ? lx - 8 : lx + 8));
+      endLabel.setAttribute('y', String(ly + 7));
+      endLabel.setAttribute('text-anchor', toLeft ? 'end' : 'start');
+    } else {
+      endLabel.style.display = 'none';
     }
 
     // dots

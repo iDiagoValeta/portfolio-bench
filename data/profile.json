@@ -11,25 +11,77 @@
     "cv": "https://github.com/iDiagoValeta/resume/blob/main/resume.pdf"
   },
   "headlines": [
-    { "value": "280+", "unit": "PRs", "label": "Reviewed pull requests merged as Technical Lead at Auro AI", "source": "Auro AI, 2026" },
-    { "value": "3", "unit": "universities", "label": "Served by GPT-CEU, the generative assistant I built and deployed at CEU", "source": "Grupo CEU, 2025–2026" },
-    { "value": "6", "unit": "apps", "label": "In the TypeScript monorepo I owned, with zero-downtime deploys and rollback", "source": "Auro AI, 2026" }
+    {
+      "value": "280+",
+      "unit": "PRs",
+      "label": "Reviewed pull requests merged as Technical Lead at Auro AI",
+      "source": "Auro AI, 2026"
+    },
+    {
+      "value": "3",
+      "unit": "universities",
+      "label": "Served by GPT-CEU, the generative assistant I built and deployed at CEU",
+      "source": "Grupo CEU, 2025–2026"
+    },
+    {
+      "value": "6",
+      "unit": "apps",
+      "label": "In the TypeScript monorepo I owned, with zero-downtime deploys and rollback",
+      "source": "Auro AI, 2026"
+    }
   ],
   "experience": [
-    { "from": "2026-09", "to": null, "role": "AI Engineer", "org": "Inditex", "place": "A Coruña", "note": "Inditex technology graduate program." },
-    { "from": "2026-06", "to": "2026-09", "role": "Technical Lead", "org": "Auro AI", "place": "Valencia", "note": "An assistant that reads energy and telecom bills over WhatsApp and switches users to the best tariff. Owned the back end and the engineering standard for a team of four." },
-    { "from": "2025-10", "to": "2026-06", "role": "AI & Back-End Developer", "org": "Grupo CEU", "place": "Valencia", "note": "Built GPT-CEU for three universities over web and WhatsApp, wired to institutional data through Azure Functions and RAG." },
-    { "from": "2025-02", "to": "2025-06", "role": "Museum Guide & Workshop Instructor", "org": "Museo de Informática, UPV", "place": "Valencia", "note": "Workshops on robotics, cryptography and programming; guided visits on the history of computing." },
-    { "from": "2022-01", "to": "2025-01", "role": "Private Tutor", "org": "Superprof", "place": "Valencia", "note": "Mathematics, physics and technical drawing." }
+    {
+      "from": "2026-09",
+      "to": null,
+      "role": "AI Engineer",
+      "org": "Inditex",
+      "place": "A Coruña",
+      "note": "Inditex technology graduate program."
+    },
+    {
+      "from": "2026-06",
+      "to": "2026-09",
+      "role": "Technical Lead",
+      "org": "Auro AI",
+      "place": "Valencia",
+      "note": "An assistant that reads energy and telecom bills over WhatsApp and switches users to the best tariff. Owned the back end and the engineering standard for a team of four."
+    },
+    {
+      "from": "2025-10",
+      "to": "2026-06",
+      "role": "AI & Back-End Developer",
+      "org": "Grupo CEU",
+      "place": "Valencia",
+      "note": "Built GPT-CEU for three universities over web and WhatsApp, wired to institutional data through Azure Functions and RAG."
+    },
+    {
+      "from": "2025-02",
+      "to": "2025-06",
+      "role": "Museum Guide & Workshop Instructor",
+      "org": "Museo de Informática, UPV",
+      "place": "Valencia",
+      "note": "Workshops on robotics, cryptography and programming; guided visits on the history of computing."
+    },
+    {
+      "from": "2022-01",
+      "to": "2025-01",
+      "role": "Private Tutor",
+      "org": "Superprof",
+      "place": "Valencia",
+      "note": "Mathematics, physics and technical drawing."
+    }
   ],
   "education": [
-    { "year": "2026", "title": "Computer Engineering, Computing specialization", "org": "Universitat Politècnica de València" },
-    { "year": "2026", "title": "Inditex Tech Ambassador", "org": "University STEM talent program" }
-  ],
-  "skills": {
-    "Generative AI": ["RAG", "PEFT / QLoRA", "LlamaIndex", "LangChain", "Mastra", "Ollama", "pgvector", "Vertex AI", "Azure OpenAI"],
-    "Machine learning": ["PyTorch", "TensorFlow", "scikit-learn", "OpenCV", "Vision Transformers"],
-    "Back end & cloud": ["Node.js", "TypeScript", "PostgreSQL", "Docker", "Google Cloud", "Azure Functions", "GitHub Actions"],
-    "Languages spoken": ["Spanish (native)", "Valencian (native)", "English (C1 professional)"]
-  }
+    {
+      "year": "2026",
+      "title": "Computer Engineering, Computing specialization",
+      "org": "Universitat Politècnica de València"
+    },
+    {
+      "year": "2026",
+      "title": "Inditex Tech Ambassador",
+      "org": "University STEM talent program"
+    }
+  ]
 }

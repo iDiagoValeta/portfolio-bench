@@ -14,10 +14,14 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 interface Bar {
   p: Project;
+  g: SVGGElement;
+  hit: SVGRectElement;
   path: SVGPathElement;
   x: number;
   w: number;
   h: number;
+  slot: number;
+  slotX: number;
 }
 
 function svg<K extends keyof SVGElementTagNameMap>(
@@ -51,6 +55,11 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     null,
   );
 
+  // Rank by index among all projects (highest index = #1).
+  const byIndex = [...data.projects].sort((a, b) => b.index - a.index);
+  const rankOf = new Map(byIndex.map((p, i) => [p.repo, i + 1]));
+  const totalProjects = data.projects.length;
+
   const root = h('div', { class: 'fp' });
   const readout = h('div', { class: 'fp-readout mono' });
   root.append(readout);
@@ -75,44 +84,58 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       h('span', { class: 'fp-r-title' }, p.title),
       h('span', { class: 'fp-r-cat' }, catLabel(p.category)),
       h('span', { class: 'fp-r-index' }, String(p.index)),
+      h('span', { class: 'fp-r-rank mono' }, `#${rankOf.get(p.repo) ?? ''} / ${totalProjects}`),
     );
   }
   writeReadout(top);
 
   for (const p of sorted) {
-    const path = svg('path', {
-      class: 'fp-bar',
-      fill: `var(--cat-${p.category})`,
+    const g = svg('g', {
+      class: 'fp-slot',
       tabindex: '0',
       role: 'button',
       'aria-label': `${p.title}, ${catLabel(p.category)}, index ${p.index}`,
     });
-    path.addEventListener('mouseenter', () => {
+    const hit = svg('rect', {
+      class: 'fp-hit',
+      x: '0',
+      y: '0',
+      width: '0',
+      height: '0',
+      fill: 'transparent',
+      'pointer-events': 'all',
+    });
+    const path = svg('path', {
+      class: 'fp-bar',
+      fill: `var(--cat-${p.category})`,
+    });
+    g.append(hit, path);
+    g.addEventListener('mouseenter', () => {
       strip.classList.add('fp-dim'); // the rest dim, the hovered bar stays full
       writeReadout(p);
     });
-    path.addEventListener('mouseleave', () => {
+    g.addEventListener('mouseleave', () => {
       strip.classList.remove('fp-dim');
       writeReadout(top);
     });
     // Keyboard parity with hover: same dim state and readout.
-    path.addEventListener('focus', () => {
+    g.addEventListener('focus', () => {
       strip.classList.add('fp-dim');
       writeReadout(p);
     });
-    path.addEventListener('blur', () => {
+    g.addEventListener('blur', () => {
       strip.classList.remove('fp-dim');
       writeReadout(top);
     });
-    path.addEventListener('click', () => openCard(p.repo));
-    path.addEventListener('keydown', (e: KeyboardEvent) => {
+    g.addEventListener('click', () => openCard(p.repo));
+    g.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         openCard(p.repo);
       }
     });
-    strip.append(path);
-    bars.push({ p, path, x: 0, w: 0, h: 0 });
+    strip.append(g);
+    bars.push({ p, g, hit, path, x: 0, w: 0, h: 0, slot: 0, slotX: 0 });
   }
 
   const legend = h('div', { class: 'fp-legend' });
@@ -152,9 +175,15 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     const slot = w / n;
     for (let i = 0; i < n; i++) {
       const b = bars[i];
+      b.slot = slot;
+      b.slotX = i * slot;
       b.w = Math.min(10, Math.max(4, slot * 0.22)); // clamp(4px, 22% of slot, 10px)
       b.x = i * slot + (slot - b.w) / 2; // centred in its slot
       b.h = (b.p.index / 100) * stripH;
+      b.hit.setAttribute('x', String(b.slotX));
+      b.hit.setAttribute('y', '0');
+      b.hit.setAttribute('width', String(slot));
+      b.hit.setAttribute('height', String(stripH));
       if (played) drawBar(b, b.h);
     }
   }

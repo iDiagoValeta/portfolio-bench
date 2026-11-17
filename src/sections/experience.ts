@@ -63,21 +63,6 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   }
   root.append(edu);
 
-  root.append(h('p', { class: 'xp-sub mono' }, 'Skills'));
-  const skills = h('div', { class: 'xp-skills' });
-  for (const [group, items] of Object.entries(profile.skills)) {
-    const chips = h('div', { class: 'xp-chips' });
-    for (const item of items) chips.append(h('span', { class: 'xp-chip' }, item));
-    skills.append(
-      h(
-        'div',
-        { class: 'xp-skill-group' },
-        h('p', { class: 'xp-skill-label mono' }, group),
-        chips,
-      ),
-    );
-  }
-  root.append(skills);
 
   el.append(root);
 

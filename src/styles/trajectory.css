@@ -3,26 +3,26 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* Dark mode keeps the current band below full ink: a solid light slab would
-     be the brightest thing on the page. */
+  /* Dark mode draws the current band as a thin ink outline, not a light slab
+     that would be the brightest thing on the page. */
   --tr-band-current: var(--ink);
 }
 
-/* Trend tile, top right of the chart. */
+/* Heading row: title left, trend counter right, both bottom-aligned. */
 .tr-head {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: flex-end;
+  gap: 12px;
 }
 .tr-tile {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  border: 0;
+  background: none;
+  padding: 0;
   text-align: right;
 }
 .tr-tile-num {
@@ -93,6 +93,20 @@
   pointer-events: none;
 }
 
+/* Final cumulative count at the end of the line. */
+.tr-end-label {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 20px;
+  fill: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.tr.is-in .tr-end-label {
+  opacity: 1;
+}
+
 /* Dots. */
 .tr-dot {
   opacity: 0;
@@ -129,11 +143,25 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .tr {
-    --tr-band-current: var(--ink-2);
+    --tr-band-current: transparent;
+  }
+  :root:not([data-theme='light']) .tr .tr-band--current {
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  :root:not([data-theme='light']) .tr .tr-band-label--current {
+    fill: var(--ink);
   }
 }
 :root[data-theme='dark'] .tr {
-  --tr-band-current: var(--ink-2);
+  --tr-band-current: transparent;
+}
+:root[data-theme='dark'] .tr .tr-band--current {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+:root[data-theme='dark'] .tr .tr-band-label--current {
+  fill: var(--ink);
 }
 
 @media (max-width: 639px) {
@@ -156,5 +184,9 @@
   }
   .tr-hair {
     transition: none !important;
+  }
+  .tr-end-label {
+    transition: none !important;
+    opacity: 1 !important;
   }
 }

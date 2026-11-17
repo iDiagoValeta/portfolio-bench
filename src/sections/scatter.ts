@@ -214,10 +214,11 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     dotEls.set(p.repo, { g, mark });
   }
 
-  // direct labels for the six highest-index projects
-  const labelled = [...projects].sort((a, b) => b.index - a.index).slice(0, 6);
+  // Label elements exist for the top six by index; render() decides how many
+  // to actually show (three on a small viewport).
+  const byIndex = [...projects].sort((a, b) => b.index - a.index);
   const labelEls = new Map<string, SVGTextElement>();
-  for (const p of labelled) {
+  for (const p of byIndex.slice(0, 6)) {
     const t = svg('text', { class: 'sc-label', 'data-cat': p.category });
     t.textContent = p.title;
     labelGroups.get(p.category)?.append(t);
@@ -244,6 +245,10 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     const width = Math.floor(el.clientWidth);
     if (width < 120) return;
     const narrow = window.innerWidth < 640;
+    // Three direct labels on mobile keep the top-right corner from piling up.
+    const labelled = byIndex.slice(0, narrow ? 3 : 6);
+    const shownLabels = new Set(labelled.map((p) => p.repo));
+    for (const [repo, t] of labelEls) t.style.display = shownLabels.has(repo) ? '' : 'none';
     const height = Math.round(narrow ? (width * 5) / 4 : (width * 9) / 16);
 
     const m = narrow

@@ -37,5 +37,4 @@ export interface Profile {
   headlines: ProfileHeadline[];
   experience: ProfileExperience[];
   education: ProfileEducation[];
-  skills: Record<string, string[]>;
 }
