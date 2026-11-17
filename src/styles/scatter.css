@@ -1,0 +1,149 @@
+.sc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.sc-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--ink-2);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sc-item:hover { color: var(--ink); border-color: var(--ink-3); }
+.sc-item[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+
+.sc-sq {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.sc-chart {
+  position: relative;
+}
+
+.sc-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Grid and axes stay recessive. */
+.sc-grid-line {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.sc-tick {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  fill: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-axis-title {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  fill: var(--ink-3);
+}
+
+.sc-quad-rect {
+  fill: var(--line);
+  fill-opacity: 0.5;
+}
+
+.sc-quad-label {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  fill: var(--ink-2);
+}
+
+.sc-cat,
+.sc-cat-labels {
+  transition: opacity 0.25s ease;
+}
+.sc-cat.is-dim,
+.sc-cat-labels.is-dim {
+  opacity: 0.16;
+}
+
+.sc-dot {
+  opacity: 0;
+  cursor: pointer;
+  transform: translate(var(--x), var(--y)) scale(0.4);
+  transform-origin: 0 0;
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.sc.is-in .sc-dot {
+  opacity: 1;
+  transform: translate(var(--x), var(--y)) scale(1);
+}
+
+.sc-mark {
+  stroke: var(--surface);
+  stroke-width: 2;
+  transition: r 0.15s ease;
+}
+
+.sc-dot:focus-visible {
+  outline: none;
+}
+.sc-dot:focus-visible .sc-mark {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.sc-label {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  fill: var(--ink-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease 0.12s;
+}
+.sc.is-in .sc-label {
+  opacity: 1;
+}
+
+.sc-note {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 0;
+}
+
+@media (max-width: 639px) {
+  .sc-label {
+    font-size: 10px;
+  }
+  /* the quadrant is narrow on a phone, so its caption shrinks to stay inside */
+  .sc-quad-label {
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-dot,
+  .sc-label,
+  .sc-cat,
+  .sc-cat-labels,
+  .sc-mark {
+    transition: none !important;
+  }
+}

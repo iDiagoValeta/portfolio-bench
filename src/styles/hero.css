@@ -1,0 +1,78 @@
+/* Hero fingerprint + headline tiles (DESIGN.md sections 2-3). */
+
+/* --- fingerprint --- */
+.fp-svg {
+  display: block;
+  width: 100%;
+}
+.fp-bar {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+/* Focus ring drawn as a path stroke: outlines on SVG shapes are inconsistent
+   across browsers, a 1px stroke always renders. */
+.fp-bar:focus {
+  outline: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+/* Hovered/focused bar stays full while the rest dim. */
+.fp-dim .fp-bar { opacity: 0.35; }
+.fp-dim .fp-bar:hover,
+.fp-dim .fp-bar:focus { opacity: 1; }
+
+.fp-cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 12px;
+}
+.fp-count { font-size: 12px; color: var(--ink-3); }
+.fp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.fp-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.fp-sq {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* --- tiles --- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tile-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tile-num {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(2.5rem, 5vw, 3.25rem);
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.tile-unit { font-size: 13px; color: var(--ink-2); }
+.tile-label { font-size: 14px; }
+/* Chips sink to the bottom so the three cards align. */
+.tile .chip { margin-top: auto; align-self: flex-start; }
+
+@media (max-width: 759px) {
+  .tiles { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,259 @@
+/* Changelog (experience, education, skills) and methodology + footer. */
+
+.xp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.xp-entry {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 28px;
+  padding: 18px 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+.xp.is-visible .xp-entry {
+  opacity: 1;
+  transform: none;
+}
+
+.xp-date {
+  padding-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* The vertical rule is a pseudo-element with a 20px overhang on both ends,
+   so it stays continuous across any entry padding without per-variant offsets. */
+.xp-body {
+  position: relative;
+  padding-left: 26px;
+}
+.xp-body::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -20px;
+  bottom: -20px;
+  width: 1px;
+  background: var(--line);
+}
+.xp-list > .xp-entry:first-child .xp-body::before {
+  top: 9px;
+}
+.xp-list > .xp-entry:last-child .xp-body::before {
+  bottom: auto;
+  height: 29px;
+}
+
+.xp-dot {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 1.5px solid var(--ink-3);
+  box-shadow: 0 0 0 2.5px var(--bg);
+}
+.xp-entry--current .xp-dot {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.xp-role {
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+.xp-org {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.xp-note {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 60ch;
+}
+
+.xp-sub {
+  margin: 44px 0 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.xp-list--edu {
+  margin-top: 8px;
+}
+.xp-entry--edu {
+  padding: 12px 0;
+}
+.xp-role--edu {
+  font-size: 1rem;
+}
+
+.xp-skills {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.xp-skill-group {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 28px;
+  align-items: start;
+}
+.xp-skill-label {
+  padding-top: 5px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.xp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.xp-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-2);
+  background: transparent;
+}
+
+@media (max-width: 639px) {
+  .xp-entry {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+    padding: 16px 0;
+  }
+  .xp-date {
+    padding-top: 0;
+    padding-left: 26px;
+  }
+  .xp-skill-group {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
+  }
+  .xp-skill-label {
+    padding-top: 0;
+  }
+}
+
+/* Methodology */
+
+.md {
+  max-width: 720px;
+}
+
+.md-formula {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.md-line {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.md-var {
+  display: inline-block;
+  width: 8ch;
+  color: var(--ink);
+}
+
+.md-label {
+  margin-top: 28px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.md-checks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+.md-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.md-check-sq {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--ink-3);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.md-data {
+  margin-top: 28px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.md-footer {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 32px;
+  flex-wrap: wrap;
+}
+.md-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+.md-links a {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ink-3);
+}
+.md-links a:hover {
+  color: var(--ink);
+  text-decoration-color: var(--ink);
+}
+.md-copy {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+@media (max-width: 639px) {
+  .md-checks {
+    grid-template-columns: 1fr;
+  }
+  .md-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

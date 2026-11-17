@@ -1,0 +1,133 @@
+.tr {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Trend tile, Epoch style, top right. */
+.tr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  align-self: flex-end;
+}
+.tr-tile-num {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.tr-tile-lab {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.tr-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Grid and axes recessive. */
+.tr-gridline {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.tr-tick {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  fill: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.tr-tick-y {
+  font-size: 10px;
+}
+
+/* Experience bands. */
+.tr-band {
+  rx: 4;
+  ry: 4;
+}
+.tr-band-label {
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+}
+.tr-band-label--above {
+  font-size: 10px;
+  fill: var(--ink-2);
+}
+
+/* Step line. */
+.tr-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Dots. */
+.tr-dot {
+  opacity: 0;
+  transform: scale(0.4);
+  transform-box: fill-box;
+  transform-origin: center;
+  cursor: pointer;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.tr.is-in .tr-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+.tr-dot:focus-visible {
+  outline: none;
+}
+.tr-dot:focus-visible {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+/* Hairline crosshair. */
+.tr-hair {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.tr-crossrect {
+  cursor: crosshair;
+}
+
+@media (max-width: 639px) {
+  .tr-tile {
+    position: static;
+    align-items: flex-start;
+    align-self: flex-end;
+  }
+  .tr-tick {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-dot {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .tr-line {
+    transition: none !important;
+  }
+  .tr-hair {
+    transition: none !important;
+  }
+}
