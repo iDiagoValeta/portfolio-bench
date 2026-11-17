@@ -88,14 +88,20 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   quadLabel.textContent = 'Most efficient';
   quadG.append(quadRect, quadLabel);
 
+  // dashed guides at the two medians, above the grid and below the dots
+  const medianV = svg('line', { class: 'sc-median' });
+  const medianH = svg('line', { class: 'sc-median' });
+
   const gridG = svg('g', { class: 'sc-grid' });
   const axisG = svg('g', { class: 'sc-axis' });
   const dotsG = svg('g', { class: 'sc-dots' });
   const labelsG = svg('g', { class: 'sc-labels' });
-  svgEl.append(quadG, gridG, axisG, dotsG, labelsG);
+  svgEl.append(quadG, gridG, axisG, medianV, medianH, dotsG, labelsG);
 
-  // domains
-  const maxCommits = Math.max(1, ...projects.map((p) => p.commits));
+  // domains. Clamp to 1 so an empty repo (0 commits) never maps to -Infinity
+  // and an all-zero dataset still yields a finite log domain.
+  const plotCommits = (c: number): number => Math.max(1, c);
+  const maxCommits = Math.max(1, ...projects.map((p) => plotCommits(p.commits)));
   const domainMax = 10 ** (Math.floor(Math.log10(maxCommits)) + 1);
   const xTicks: number[] = [];
   for (let v = 1; v <= domainMax; v *= 10) xTicks.push(v);
@@ -262,14 +268,23 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     );
 
     // shaded quadrant: below the median commits and above the median index
-    const qx = x(medCommits);
+    const qx = x(plotCommits(medCommits));
     const qy = y(medIndex);
     quadRect.setAttribute('x', String(plotLeft));
     quadRect.setAttribute('y', String(plotTop));
     quadRect.setAttribute('width', String(Math.max(0, qx - plotLeft)));
     quadRect.setAttribute('height', String(Math.max(0, qy - plotTop)));
-    quadLabel.setAttribute('x', String(plotLeft + 11));
-    quadLabel.setAttribute('y', String(plotTop + 13));
+    quadLabel.setAttribute('x', String(plotLeft + 8));
+    quadLabel.setAttribute('y', String(plotTop + 18));
+
+    medianV.setAttribute('x1', String(qx));
+    medianV.setAttribute('x2', String(qx));
+    medianV.setAttribute('y1', String(plotTop));
+    medianV.setAttribute('y2', String(plotBottom));
+    medianH.setAttribute('x1', String(plotLeft));
+    medianH.setAttribute('x2', String(plotRight));
+    medianH.setAttribute('y1', String(qy));
+    medianH.setAttribute('y2', String(qy));
 
     xGrid.forEach((line, i) => {
       const px = x(xTicks[i]);
@@ -315,7 +330,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     for (const p of projects) {
       const d = dotEls.get(p.repo);
       if (!d) continue;
-      const cx = x(p.commits);
+      const cx = x(plotCommits(p.commits));
       const cy = y(p.index);
       d.g.style.setProperty('--x', `${cx}px`);
       d.g.style.setProperty('--y', `${cy}px`);
@@ -327,14 +342,23 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     for (const p of labelled) {
       const t = labelEls.get(p.repo);
       if (!t) continue;
-      const cx = x(p.commits);
+      const cx = x(plotCommits(p.commits));
       const cy = y(p.index);
       const w = p.title.length * (narrow ? CHAR_W_NARROW : CHAR_W) + 4;
-      const candidates: { x: number; y: number; anchor: 'start' | 'end' | 'middle' }[] = [
-        { x: cx + 11, y: cy + 4, anchor: 'start' },
-        { x: cx - 11, y: cy + 4, anchor: 'end' },
-        { x: cx, y: cy - 14, anchor: 'middle' },
-      ];
+      // Right-edge dots place their label to the left (anchor end) so it stays
+      // inside the canvas; elsewhere the usual right-then-left order applies.
+      const nearRight = cx >= plotLeft + 0.85 * (plotRight - plotLeft);
+      const candidates: { x: number; y: number; anchor: 'start' | 'end' | 'middle' }[] = nearRight
+        ? [
+            { x: cx - 11, y: cy + 4, anchor: 'end' },
+            { x: cx, y: cy - 14, anchor: 'middle' },
+            { x: cx + 11, y: cy + 4, anchor: 'start' },
+          ]
+        : [
+            { x: cx + 11, y: cy + 4, anchor: 'start' },
+            { x: cx - 11, y: cy + 4, anchor: 'end' },
+            { x: cx, y: cy - 14, anchor: 'middle' },
+          ];
       // a label never counts its own dot as an obstacle
       const blockers = placed.concat(
         [...dotBoxes].filter(([repo]) => repo !== p.repo).map(([, b]) => b),

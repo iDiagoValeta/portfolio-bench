@@ -5,6 +5,10 @@
   display: block;
   width: 100%;
 }
+.fp-baseline {
+  stroke: var(--line);
+  stroke-width: 1;
+}
 .fp-bar {
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -20,6 +24,18 @@
 .fp-dim .fp-bar { opacity: 0.35; }
 .fp-dim .fp-bar:hover,
 .fp-dim .fp-bar:focus { opacity: 1; }
+
+/* Mono readout above the strip: defaults to the top project, follows hover/focus. */
+.fp-readout {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--ink);
+  margin-bottom: 10px;
+  min-height: 1em;
+}
+.fp-r-cat { color: var(--ink-2); }
 
 .fp-cap {
   display: flex;
@@ -49,13 +65,16 @@
 .tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  margin-top: 56px;
 }
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  padding: 4px 24px;
 }
+.tile:first-child { padding-left: 0; }
+.tile + .tile { border-left: 1px solid var(--line); }
 .tile-value {
   display: flex;
   align-items: baseline;
@@ -63,16 +82,28 @@
 }
 .tile-num {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: clamp(2.5rem, 5vw, 3.25rem);
+  font-size: 56px;
   line-height: 1;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.tile-unit { font-size: 13px; color: var(--ink-2); }
+.tile-unit {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
 .tile-label { font-size: 14px; }
-/* Chips sink to the bottom so the three cards align. */
-.tile .chip { margin-top: auto; align-self: flex-start; }
+.tile-source {
+  font-size: 12px;
+  color: var(--ink-3);
+}
 
 @media (max-width: 759px) {
   .tiles { grid-template-columns: 1fr; }
+  .tile { padding: 20px 0; }
+  .tile + .tile {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+  .tile-num { font-size: 40px; }
 }

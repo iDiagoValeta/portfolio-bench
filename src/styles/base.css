@@ -48,9 +48,9 @@ p { margin: 0; color: var(--ink-2); }
   .container { padding: 0 16px; }
 }
 
-section { padding: 120px 0; }
+main > section { padding: 64px 0; }
 @media (max-width: 639px) {
-  section { padding: 72px 0; }
+  main > section { padding: 40px 0; }
 }
 
 .card {
@@ -154,6 +154,11 @@ h2 .section-marker { display: inline-block; }
   justify-content: center;
 }
 
+@media (max-width: 639px) {
+  .nav .links { display: none; }
+  .nav .container { flex-wrap: nowrap; }
+}
+
 .hero { padding-top: 80px; }
 .hero .eyebrow {
   font-family: 'JetBrains Mono Variable', 'JetBrains Mono', monospace;
@@ -171,6 +176,11 @@ h2 .section-marker { display: inline-block; }
   margin-top: 24px;
   font-size: 17px;
   color: var(--ink-2);
+}
+.hero .hero-meta {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-3);
 }
 .hero .actions {
   display: flex;

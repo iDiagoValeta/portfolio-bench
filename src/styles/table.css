@@ -11,14 +11,14 @@
 
 .t-table {
   width: 100%;
-  min-width: 760px; /* forces horizontal scrolling inside .t-scroll below 760px */
+  min-width: 0;
   border-collapse: collapse;
   font-size: 13px;
 }
 
 .t-table th,
 .t-table td {
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
@@ -57,10 +57,10 @@
 
 .t-rank { width: 44px; color: var(--ink-3); }
 .t-project { min-width: 190px; }
-.t-title { display: block; font-weight: 600; color: var(--ink); }
+.t-title { display: inline; font-weight: 600; color: var(--ink); }
 .t-repo {
-  display: block;
-  margin-top: 1px;
+  display: inline;
+  margin-left: 8px;
   font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px;
   color: var(--ink-3);
@@ -120,6 +120,36 @@
   }
   .t-table thead th:first-child { z-index: 2; }
   .t-row:hover td:first-child { background: var(--surface); }
+}
+
+.t-foot {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.t-showall {
+  font-size: 12px;
+  color: var(--ink-2);
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.t-showall:hover { color: var(--ink); border-color: var(--ink-3); }
+
+@media (max-width: 639px) {
+  .t-table th:nth-child(3),
+  .t-table td:nth-child(3),
+  .t-table th:nth-child(5),
+  .t-table td:nth-child(5),
+  .t-table th:nth-child(6),
+  .t-table td:nth-child(6),
+  .t-table th:nth-child(7),
+  .t-table td:nth-child(7) {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

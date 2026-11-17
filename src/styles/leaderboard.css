@@ -8,6 +8,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px 12px;
   row-gap: 8px;
 }
@@ -38,8 +39,8 @@
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .lb-chip[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--bg);
+  background: transparent;
+  color: var(--ink);
   border-color: var(--ink);
 }
 .lb-chip .sq {
@@ -58,8 +59,8 @@
 .lb-tick-labels {
   position: absolute;
   top: 0;
-  left: var(--lb-title-w, 150px);
-  right: 0;
+  left: calc(var(--lb-title-w, 150px) + 16px);
+  right: 52px;
   height: 16px;
   pointer-events: none;
 }
@@ -77,8 +78,8 @@
 .lb-gridlines {
   position: absolute;
   top: 16px;
-  left: var(--lb-title-w, 150px);
-  right: 0;
+  left: calc(var(--lb-title-w, 150px) + 16px);
+  right: 52px;
   bottom: 0;
   pointer-events: none;
 }
@@ -100,7 +101,7 @@
 
 .lb-row {
   display: grid;
-  grid-template-columns: var(--lb-title-w, 150px) 1fr;
+  grid-template-columns: var(--lb-title-w, 150px) 1fr 36px;
   gap: 10px;
   align-items: center;
   padding: 4px 6px;

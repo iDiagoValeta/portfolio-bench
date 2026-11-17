@@ -3,13 +3,10 @@ import '../styles/hero.css';
 import type { Dataset, Project } from '../types';
 import type { Profile } from '../types-profile';
 import { h, onVisible } from '../lib/dom';
-import { showTip, hideTip } from '../lib/tooltip';
 import { openCard } from './card';
 
-const GAP = 2; // px between bars
-const RADIUS = 4; // rounded top, the data end; the base stays square on the baseline
-const STRIP_H = 120; // strip height in px
-const STRIP_H_SMALL = 88; // strip height under a 640px viewport
+const STRIP_H = 140; // strip height in px
+const STRIP_H_SMALL = 100; // strip height under a 640px viewport
 const GROW_MS = 360; // one bar's growth
 const SEQUENCE_MS = 1100; // whole stagger, kept under the 1.2s budget
 
@@ -33,14 +30,10 @@ function svg<K extends keyof SVGElementTagNameMap>(
 }
 
 function barPath(x: number, baseline: number, w: number, h: number): string {
-  // The radius collapses for very short bars so the cap never outweighs the data.
-  const r = Math.min(RADIUS, w / 2, h);
+  // A full semicircular cap on the data end; it collapses for very short bars.
+  const r = Math.min(w / 2, h);
   const y = baseline - h;
   return `M${x} ${baseline}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${baseline}Z`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
@@ -52,16 +45,39 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   const catLabel = (id: string): string =>
     data.categories.find((c) => c.id === id)?.label ?? id;
 
+  // The readout defaults to the top project by index, not the first by date.
+  const top = sorted.reduce<Project | null>(
+    (best, p) => (!best || p.index > best.index ? p : best),
+    null,
+  );
+
   const root = h('div', { class: 'fp' });
+  const readout = h('div', { class: 'fp-readout mono' });
+  root.append(readout);
+
   const strip = svg('svg', {
     class: 'fp-svg',
     role: 'img',
-    'aria-label': `Fingerprint of ${sorted.length} projects: one bar per project, sorted by first commit; bar height is the engineering index.`,
+    'aria-label': `Fingerprint of ${sorted.length} projects: one slim bar per project, sorted by first commit; bar height is the engineering index.`,
   });
+  const baseline = svg('line', { class: 'fp-baseline' });
+  strip.append(baseline);
+  root.append(strip);
 
   let stripH = STRIP_H;
   let played = false; // growth finished or skipped; later layouts draw final bars
   const bars: Bar[] = [];
+
+  function writeReadout(p: Project | null): void {
+    readout.textContent = '';
+    if (!p) return;
+    readout.append(
+      h('span', { class: 'fp-r-title' }, p.title),
+      h('span', { class: 'fp-r-cat' }, catLabel(p.category)),
+      h('span', { class: 'fp-r-index' }, String(p.index)),
+    );
+  }
+  writeReadout(top);
 
   for (const p of sorted) {
     const path = svg('path', {
@@ -71,30 +87,24 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       role: 'button',
       'aria-label': `${p.title}, ${catLabel(p.category)}, index ${p.index}`,
     });
-    const tip = `<strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(catLabel(p.category))}<br>Index <span class="mono">${p.index}</span>`;
-    path.addEventListener('mouseenter', (e: MouseEvent) => {
+    path.addEventListener('mouseenter', () => {
       strip.classList.add('fp-dim'); // the rest dim, the hovered bar stays full
-      showTip(tip, e.clientX, e.clientY);
+      writeReadout(p);
     });
-    path.addEventListener('mousemove', (e: MouseEvent) => showTip(tip, e.clientX, e.clientY));
     path.addEventListener('mouseleave', () => {
       strip.classList.remove('fp-dim');
-      hideTip();
+      writeReadout(top);
     });
-    // Keyboard parity with hover: same dim state, tooltip anchored to the bar.
+    // Keyboard parity with hover: same dim state and readout.
     path.addEventListener('focus', () => {
       strip.classList.add('fp-dim');
-      const r = path.getBoundingClientRect();
-      showTip(tip, r.left + r.width / 2, r.bottom);
+      writeReadout(p);
     });
     path.addEventListener('blur', () => {
       strip.classList.remove('fp-dim');
-      hideTip();
+      writeReadout(top);
     });
-    path.addEventListener('click', () => {
-      hideTip(); // touch never fires mouseleave; the card repeats these facts anyway
-      openCard(p.repo);
-    });
+    path.addEventListener('click', () => openCard(p.repo));
     path.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -104,8 +114,6 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     strip.append(path);
     bars.push({ p, path, x: 0, w: 0, h: 0 });
   }
-
-  root.append(strip);
 
   const legend = h('div', { class: 'fp-legend' });
   for (const c of data.categories) {
@@ -134,12 +142,18 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     stripH = window.innerWidth < 640 ? STRIP_H_SMALL : STRIP_H;
     strip.setAttribute('width', String(w));
     strip.setAttribute('height', String(stripH));
+    // 1px baseline sits just inside the bottom edge so it renders crisply.
+    baseline.setAttribute('x1', '0');
+    baseline.setAttribute('y1', String(stripH - 0.5));
+    baseline.setAttribute('x2', String(w));
+    baseline.setAttribute('y2', String(stripH - 0.5));
     const n = bars.length;
-    const barW = n > 0 ? Math.max(1, (w - GAP * (n - 1)) / n) : 0;
+    if (n === 0) return;
+    const slot = w / n;
     for (let i = 0; i < n; i++) {
       const b = bars[i];
-      b.x = i * (barW + GAP);
-      b.w = barW;
+      b.w = Math.min(10, Math.max(4, slot * 0.22)); // clamp(4px, 22% of slot, 10px)
+      b.x = i * slot + (slot - b.w) / 2; // centred in its slot
       b.h = (b.p.index / 100) * stripH;
       if (played) drawBar(b, b.h);
     }

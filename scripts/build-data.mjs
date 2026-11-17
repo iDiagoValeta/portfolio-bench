@@ -7,7 +7,16 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { checksFromTree, craft, index as indexScore, parseLastPage, reach, recency } from './lib/metrics.mjs';
+import {
+  checksFromTree,
+  craft,
+  index as indexScore,
+  parseLastPage,
+  reach,
+  recency,
+  retryDelay,
+  RETRY_MAX_ATTEMPTS,
+} from './lib/metrics.mjs';
 
 const OWNER = 'iDiagoValeta';
 const API = 'https://api.github.com';
@@ -28,25 +37,53 @@ const HEADERS = {
   'User-Agent': 'portfolio-bench-build',
 };
 
-async function ghGet(path, repo, { allow404 = false } = {}) {
-  let res;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function discardBody(res) {
   try {
-    res = await fetch(`${API}${path}`, { headers: HEADERS });
-  } catch (cause) {
-    throw new Error(`[${repo}] GET ${path} failed: ${cause.message}`, { cause });
+    await res.body?.cancel();
+  } catch {
+    // a retry proceeds regardless of whether the old body can be cancelled
   }
-  if (res.status === 404 && allow404) return null;
-  if (!res.ok) {
-    let detail = '';
+}
+
+async function ghGet(path, repo, { allow404 = false } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    let res;
     try {
-      const body = await res.json();
-      if (body?.message) detail = `: ${body.message}`;
-    } catch {
-      // keep the status code as the only detail
+      res = await fetch(`${API}${path}`, { headers: HEADERS });
+    } catch (cause) {
+      throw new Error(`[${repo}] GET ${path} failed: ${cause.message}`, { cause });
     }
-    throw new Error(`[${repo}] GET ${path} failed (HTTP ${res.status})${detail}`);
+
+    if (res.status === 404 && allow404) return null;
+    if (res.ok) return res;
+
+    const headers = {
+      'retry-after': res.headers.get('retry-after'),
+      'x-ratelimit-remaining': res.headers.get('x-ratelimit-remaining'),
+      'x-ratelimit-reset': res.headers.get('x-ratelimit-reset'),
+    };
+    const wait = retryDelay({ status: res.status, headers, attempt, now: Date.now() });
+
+    if (wait === null || attempt >= RETRY_MAX_ATTEMPTS) {
+      let detail = '';
+      try {
+        const body = await res.json();
+        if (body?.message) detail = `: ${body.message}`;
+      } catch {
+        // keep the status code as the only detail
+      }
+      throw new Error(`[${repo}] GET ${path} failed (HTTP ${res.status})${detail}`);
+    }
+
+    await discardBody(res);
+    console.warn(
+      `[${repo}] GET ${path} -> HTTP ${res.status}; retrying in ${Math.round(wait)}ms ` +
+        `(attempt ${attempt + 1}/${RETRY_MAX_ATTEMPTS}).`,
+    );
+    await sleep(wait);
   }
-  return res;
 }
 
 async function getJson(path, repo, options) {
@@ -70,6 +107,12 @@ async function readmeLength(full, repo) {
 
 async function treePaths(full, repo, defaultBranch) {
   const data = await getJson(`/repos/${full}/git/trees/${encodeURIComponent(defaultBranch)}?recursive=1`, repo);
+  if (data?.truncated === true) {
+    console.warn(
+      `[${repo}] warning: git tree response was truncated; some paths are missing, ` +
+        'so craft checks may be understated.',
+    );
+  }
   return Array.isArray(data?.tree) ? data.tree.map((entry) => entry.path) : [];
 }
 
@@ -91,7 +134,13 @@ async function pooled(items, limit, worker) {
       results[i] = await worker(items[i]);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runner));
+  // allSettled keeps every in-flight runner's rejection collected, so a single
+  // failure cannot leave unhandled promise rejections behind.
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(limit, items.length) }, runner),
+  );
+  const failed = settled.find((result) => result.status === 'rejected');
+  if (failed) throw failed.reason;
   return results;
 }
 

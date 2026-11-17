@@ -27,16 +27,16 @@ function parseValue(value: string): Omit<Count, 'el'> | null {
 export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   void data;
 
-  const root = h('div', { class: 'tiles' });
+  const root = h('div', { class: 'tiles card' });
   const counts: Count[] = [];
 
   for (const hl of profile.headlines) {
     const numEl = h('span', { class: 'tile-num' });
     root.append(
-      h('div', { class: 'tile card' },
+      h('div', { class: 'tile' },
         h('div', { class: 'tile-value' }, numEl, h('span', { class: 'tile-unit mono' }, hl.unit)),
         h('p', { class: 'tile-label' }, hl.label),
-        h('span', { class: 'chip mono' }, hl.source),
+        h('span', { class: 'tile-source mono' }, hl.source),
       ),
     );
     const parsed = parseValue(hl.value);

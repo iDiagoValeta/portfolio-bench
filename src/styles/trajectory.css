@@ -2,28 +2,38 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  /* Dark mode keeps the current band below full ink: a solid light slab would
+     be the brightest thing on the page. */
+  --tr-band-current: var(--ink);
 }
 
-/* Trend tile, Epoch style, top right. */
+/* Trend tile, top right of the chart. */
+.tr-head {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
 .tr-tile {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
-  align-self: flex-end;
+  text-align: right;
 }
 .tr-tile-num {
-  font-size: 13px;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1;
   color: var(--ink);
-  font-weight: 600;
 }
 .tr-tile-lab {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink-3);
 }
 
@@ -49,18 +59,27 @@
   font-size: 10px;
 }
 
-/* Experience bands. */
+/* Experience bands: past roles are quiet, the current role carries the ink. */
 .tr-band {
   rx: 4;
   ry: 4;
+  fill: var(--line);
+  stroke: none;
+}
+.tr-band--current {
+  fill: var(--tr-band-current);
 }
 .tr-band-label {
   font-size: 11px;
   font-weight: 500;
+  fill: var(--ink);
   pointer-events: none;
 }
-.tr-band-label--above {
-  font-size: 10px;
+.tr-band-label--current {
+  fill: var(--bg);
+}
+/* Staggered mobile labels sit outside the band, so they use the page ink. */
+.tr-band-label--outside {
   fill: var(--ink-2);
 }
 
@@ -71,6 +90,7 @@
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
+  pointer-events: none;
 }
 
 /* Dots. */
@@ -107,11 +127,18 @@
   cursor: crosshair;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .tr {
+    --tr-band-current: var(--ink-2);
+  }
+}
+:root[data-theme='dark'] .tr {
+  --tr-band-current: var(--ink-2);
+}
+
 @media (max-width: 639px) {
-  .tr-tile {
-    position: static;
-    align-items: flex-start;
-    align-self: flex-end;
+  .tr-tile-num {
+    font-size: 34px;
   }
   .tr-tick {
     font-size: 10px;

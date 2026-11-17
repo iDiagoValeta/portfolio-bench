@@ -158,8 +158,8 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     const bar = h('div', { class: 'lb-bar' });
     bar.style.background = catVar(p.category);
     const value = h('span', { class: 'lb-value' });
-    track.append(bar, value);
-    row.append(title, track);
+    track.append(bar);
+    row.append(title, track, value);
 
     row.addEventListener('mouseenter', (e: MouseEvent) => {
       const html = `<strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(catLabel(data, p.category))}<br>Index ${p.index} · Commits ${formatCompact(p.commits)} · Stars ${formatCompact(p.stars)} · Craft ${Math.round(p.craft * 100)}`;
@@ -170,7 +170,10 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       showTip(html, e.clientX, e.clientY);
     });
     row.addEventListener('mouseleave', () => hideTip());
-    row.addEventListener('click', () => openCard(p.repo));
+    row.addEventListener('click', () => {
+      hideTip();
+      openCard(p.repo);
+    });
     row.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -252,9 +255,11 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     // show all button
     if (sorted.length <= 12) {
       showAllBtn.style.display = 'none';
+      showAllBtn.setAttribute('aria-expanded', 'false');
     } else {
       showAllBtn.style.display = '';
       showAllBtn.textContent = expanded ? 'Show top 12' : `Show all ${sorted.length}`;
+      showAllBtn.setAttribute('aria-expanded', String(expanded));
     }
 
     // update aria-pressed

@@ -59,7 +59,10 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     h('a', { href: profile.links.huggingface, ...ext }, 'Hugging Face'),
     h('a', { href: profile.links.cv, ...ext }, 'CV'),
   );
-  root.append(
+  el.append(root);
+
+  // Footer sits outside the 720px .md wrapper so it spans the full container.
+  el.append(
     h(
       'footer',
       { class: 'md-footer' },
@@ -67,6 +70,4 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       h('p', { class: 'md-copy mono' }, `© ${year} ${profile.name}`),
     ),
   );
-
-  el.append(root);
 }

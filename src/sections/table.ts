@@ -44,11 +44,20 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   table.append(thead, tbody);
   thead.append(headRow);
   scroller.append(table);
-  root.append(scroller);
+
+  const foot = h('div', { class: 't-foot' });
+  const showAllBtn = h('button', { class: 't-showall', type: 'button' }, 'Show all');
+  showAllBtn.addEventListener('click', () => {
+    expanded = !expanded;
+    render();
+  });
+  foot.append(showAllBtn);
+  root.append(scroller, foot);
   el.append(root);
 
   const thEls = new Map<SortKey, HTMLTableCellElement>();
   const sort: { key: SortKey; dir: 'asc' | 'desc' } = { key: 'index', dir: 'desc' };
+  let expanded = false;
 
   for (const col of COLUMNS) {
     const th = h('th', {
@@ -105,7 +114,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   }
 
   function buildRow(p: Project): HTMLTableRowElement {
-    const tr = h('tr', { class: 't-row', tabindex: '0' });
+    const tr = h('tr', { class: 't-row', tabindex: '0', role: 'button', 'aria-haspopup': 'dialog' });
 
     const tdRank = h('td', { class: 't-rank num' }, String(rank.get(p.repo) ?? ''));
 
@@ -147,7 +156,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
 
     tr.addEventListener('click', () => openCard(p.repo));
     tr.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         openCard(p.repo);
       }
@@ -158,7 +167,14 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
 
   function render(): void {
     const sorted = [...data.projects].sort(compare);
-    for (const p of sorted) {
+    const visibleList = expanded ? sorted : sorted.slice(0, 10);
+    const visibleRepos = new Set(visibleList.map((p) => p.repo));
+
+    rows.forEach((tr, repo) => {
+      if (!visibleRepos.has(repo) && tbody.contains(tr)) tr.remove();
+    });
+
+    for (const p of visibleList) {
       let tr = rows.get(p.repo);
       if (!tr) {
         tr = buildRow(p);
@@ -166,6 +182,17 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       }
       tbody.append(tr);
     }
+
+    // show all button
+    if (data.projects.length <= 10) {
+      showAllBtn.style.display = 'none';
+      showAllBtn.setAttribute('aria-expanded', 'false');
+    } else {
+      showAllBtn.style.display = '';
+      showAllBtn.textContent = expanded ? 'Show top 10' : `Show all ${data.projects.length}`;
+      showAllBtn.setAttribute('aria-expanded', String(expanded));
+    }
+
     COLUMNS.forEach((col) => {
       const th = thEls.get(col.key)!;
       const active = col.key === sort.key;

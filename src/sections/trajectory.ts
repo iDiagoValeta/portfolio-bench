@@ -7,6 +7,7 @@ import { utcFormat } from 'd3-time-format';
 import type { Dataset } from '../types';
 import type { Profile, ProfileExperience } from '../types-profile';
 import { h, onVisible } from '../lib/dom';
+import { asOfDate } from '../lib/format';
 import { showTip, hideTip } from '../lib/tooltip';
 import { openCard } from './card';
 
@@ -20,6 +21,16 @@ const BOTTOM_M = 30;
 const LEFT_M = 36;
 const RIGHT_M = 16;
 const LANE_GAP = 12;
+const DOMAIN_START = new Date('2025-01-01T00:00:00Z');
+const Y_STEP = 5;
+
+// Short names keep the lane labels readable; the changelog spells the full org.
+const ORG_SHORT: Record<string, string> = {
+  'Museo de Informática, UPV': 'UPV Museum',
+  'Grupo CEU': 'Grupo CEU',
+  'Auro AI': 'Auro AI',
+  Inditex: 'Inditex',
+};
 
 function svg<K extends keyof SVGElementTagNameMap>(
   tag: K,
@@ -43,30 +54,39 @@ function toDate(s: string): Date {
   return new Date(s.length === 7 ? `${s}-01` : s);
 }
 
+function shortOrg(org: string): string {
+  return ORG_SHORT[org] ?? org;
+}
+
 const fmtMonth = utcFormat('%b %Y');
+const fmtQuarter = utcFormat('%b');
 
 export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   const root = h('div', { class: 'tr' });
   el.append(root);
 
-  const asOf = new Date(data.asOf);
-  const domainStart = new Date('2022-01-01T00:00:00Z');
+  // The whole as-of day counts: a project created that day stays inside the domain.
+  const asOf = asOfDate(data.asOf);
 
   // --- trend tile ---
   const cutoff = new Date(asOf);
   cutoff.setUTCMonth(cutoff.getUTCMonth() - 12);
-  const recentCount = data.projects.filter((p) => Date.parse(p.createdAt) >= cutoff.getTime()).length;
+  const recentCount = data.projects.filter((p) => {
+    const created = Date.parse(p.createdAt);
+    return created >= cutoff.getTime() && created <= asOf.getTime();
+  }).length;
   const tile = h('div', { class: 'tr-tile' });
   tile.append(
-    h('span', { class: 'tr-tile-num mono' }, `↑ ${recentCount} projects / year`),
-    h('span', { class: 'tr-tile-lab' }, 'public projects shipped'),
+    h('span', { class: 'tr-tile-num' }, `↑ ${recentCount}`),
+    h('span', { class: 'tr-tile-lab mono' }, 'public projects in the last 12 months'),
   );
-  root.append(tile);
+  const head = h('div', { class: 'tr-head' }, tile);
+  root.append(head);
 
   // --- experience rows (greedy stacking) ---
-  const exps = [...profile.experience].sort(
-    (a, b) => toDate(a.from).getTime() - toDate(b.from).getTime(),
-  );
+  const exps = profile.experience
+    .filter((e) => e.org !== 'Superprof')
+    .sort((a, b) => toDate(a.from).getTime() - toDate(b.from).getTime());
   const rowEnds: number[] = [];
   const rows: { exp: ProfileExperience; row: number; from: Date; to: Date; current: boolean }[] = [];
   for (const e of exps) {
@@ -84,11 +104,21 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   }
   const rowCount = Math.max(1, rowEnds.length);
 
+  // --- sorted projects and the y domain ---
+  const sortedProjects = [...data.projects].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
+  // Keep a little headroom above the curve, but never less than the 25 the
+  // review asks for.
+  const yMax = Math.max(25, Math.ceil(sortedProjects.length / Y_STEP) * Y_STEP);
+  const yTickValues: number[] = [];
+  for (let t = 0; t <= yMax; t += Y_STEP) yTickValues.push(t);
+
   // --- svg skeleton ---
   const svgEl = svg('svg', { class: 'tr-svg', role: 'img' });
   svgEl.setAttribute(
     'aria-label',
-    `Trajectory from 2022 to ${data.asOf}: experience bands and cumulative count of ${data.projects.length} public projects.`,
+    `Trajectory from 2025 to ${data.asOf}: experience bands and cumulative count of ${data.projects.length} public projects.`,
   );
   root.append(svgEl);
 
@@ -98,48 +128,51 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   const lineG = svg('g', { class: 'tr-lineg' });
   const dotsG = svg('g', { class: 'tr-dots' });
   const crossG = svg('g', { class: 'tr-cross' });
-  svgEl.append(laneG, gridG, axisG, lineG, dotsG, crossG);
+  // The crosshair hit area sits under the line and the dots so their hover and
+  // click handlers win; the hairline itself stays on top but ignores pointers.
+  const crossRect = svg('rect', { class: 'tr-crossrect' });
+  svgEl.append(laneG, gridG, axisG, crossRect, lineG, dotsG, crossG);
 
-  // year ticks (text)
-  const years: number[] = [];
-  for (let y = 2022; y <= asOf.getUTCFullYear(); y++) years.push(y);
-  const yearTexts = years.map((y) => {
+  // quarterly ticks (text)
+  const quarterDates: Date[] = [];
+  for (let i = 0; ; i++) {
+    const d = new Date(Date.UTC(2025, i * 3, 1));
+    if (d > asOf) break;
+    quarterDates.push(d);
+  }
+  const quarterTexts = quarterDates.map((d) => {
     const t = svg('text', { class: 'tr-tick' });
-    t.textContent = String(y);
+    t.textContent = d.getUTCMonth() === 0 ? fmtMonth(d) : fmtQuarter(d);
     axisG.append(t);
-    return { y, el: t };
+    return { d, el: t };
   });
 
   // y-axis ticks
-  const yTickTexts: SVGTextElement[] = [];
   const yGridLines: SVGLineElement[] = [];
-  // created lazily in layout based on count; store arrays sized to ticks
-  let yTicksCache: number[] = [];
+  const yTickTexts: SVGTextElement[] = [];
+  for (let i = 0; i < yTickValues.length; i++) {
+    const l = svg('line', { class: 'tr-gridline' });
+    gridG.append(l);
+    yGridLines.push(l);
+    const t = svg('text', { class: 'tr-tick tr-tick-y' });
+    t.textContent = String(yTickValues[i]);
+    axisG.append(t);
+    yTickTexts.push(t);
+  }
 
   // bands
   const bands = rows.map((r) => {
-    const rect = svg('rect', { class: 'tr-band' });
-    if (r.current) {
-      rect.setAttribute('fill', 'var(--ink)');
-      rect.setAttribute('stroke', 'var(--ink-3)');
-    } else {
-      rect.setAttribute('fill', 'var(--line)');
-      rect.setAttribute('stroke', 'var(--ink-3)');
-    }
-    rect.setAttribute('stroke-width', '1');
+    const rect = svg('rect', {
+      class: r.current ? 'tr-band tr-band--current' : 'tr-band',
+    });
     const label = svg('text', { class: 'tr-band-label' });
-    label.textContent = `${r.exp.role} · ${r.exp.org}`;
-    if (r.current) label.setAttribute('fill', 'var(--bg)');
-    else label.setAttribute('fill', 'var(--ink)');
+    label.textContent = shortOrg(r.exp.org);
     laneG.append(rect, label);
     return { ...r, rect, label };
   });
 
   // step line
-  const sortedProjects = [...data.projects].sort(
-    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-  );
-  const points: { date: Date; count: number }[] = [{ date: domainStart, count: 0 }];
+  const points: { date: Date; count: number }[] = [{ date: DOMAIN_START, count: 0 }];
   let c = 0;
   for (const p of sortedProjects) {
     c++;
@@ -186,50 +219,27 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   // crosshair
   const hairline = svg('line', { class: 'tr-hair' });
   crossG.append(hairline);
-  const crossRect = svg('rect', { class: 'tr-crossrect' });
-  crossG.append(crossRect);
 
   const lineGen = line<{ date: Date; count: number }>()
     .x((d) => xScale(d.date))
     .y((d) => yScale(d.count))
     .curve(curveStepAfter);
 
-  let xScale = scaleTime().domain([domainStart, asOf]);
-  let yScale = scaleLinear().domain([0, Math.max(1, sortedProjects.length)]);
+  let xScale = scaleTime().domain([DOMAIN_START, asOf]);
+  let yScale = scaleLinear().domain([0, yMax]);
 
   let played = false;
-  let lastWidth = 0;
   let resizeTimer: number | null = null;
-
-  function ensureYTicks(count: number) {
-    const ticks = yScale.ticks(Math.min(6, count + 1));
-    // rebuild arrays if count changed
-    if (ticks.length !== yTicksCache.length) {
-      // clear
-      yGridLines.forEach((l) => l.remove());
-      yTickTexts.forEach((t) => t.remove());
-      yGridLines.length = 0;
-      yTickTexts.length = 0;
-      yTicksCache = ticks;
-      for (const _ of ticks) {
-        const l = svg('line', { class: 'tr-gridline' });
-        gridG.append(l);
-        yGridLines.push(l);
-        const t = svg('text', { class: 'tr-tick tr-tick-y' });
-        axisG.append(t);
-        yTickTexts.push(t);
-      }
-    } else {
-      yTicksCache = ticks;
-    }
-  }
 
   function layout(): void {
     const width = Math.floor(el.clientWidth);
     if (width < 120) return;
     const narrow = window.innerWidth < 640;
     const plotH = narrow ? PLOT_H_MOBILE : PLOT_H_DESKTOP;
-    const laneH = rowCount * ROW_H + 4;
+    // On mobile the staggered labels live above and below the band, so the
+    // lane needs breathing room at both ends to stay inside the SVG.
+    const laneTop = narrow ? 16 : 2;
+    const laneH = laneTop + rowCount * ROW_H + (narrow ? 24 : 4);
     const totalH = laneH + LANE_GAP + plotH + BOTTOM_M;
 
     const mLeft = LEFT_M;
@@ -237,45 +247,55 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     const plotTop = laneH + LANE_GAP;
     const plotBottom = totalH - BOTTOM_M;
 
-    xScale = scaleTime().domain([domainStart, asOf]).range([mLeft, width - mRight]);
-    yScale = scaleLinear().domain([0, Math.max(1, sortedProjects.length)]).range([plotBottom, plotTop]);
+    xScale = scaleTime().domain([DOMAIN_START, asOf]).range([mLeft, width - mRight]);
+    yScale = scaleLinear().domain([0, yMax]).range([plotBottom, plotTop]);
 
     svgEl.setAttribute('width', String(width));
     svgEl.setAttribute('height', String(totalH));
     svgEl.setAttribute('viewBox', `0 0 ${width} ${totalH}`);
 
     // bands
-    for (const b of bands) {
+    bands.forEach((b, i) => {
       const x1 = xScale(b.from);
       const x2 = xScale(b.to);
       const bw = Math.max(0, x2 - x1);
-      const by = 2 + b.row * ROW_H + (ROW_H - BAND_H) / 2;
+      const by = laneTop + b.row * ROW_H + (ROW_H - BAND_H) / 2;
       b.rect.setAttribute('x', String(x1));
       b.rect.setAttribute('y', String(by));
       b.rect.setAttribute('width', String(bw));
       b.rect.setAttribute('height', String(BAND_H));
-      const labelStr = `${b.exp.role} · ${b.exp.org}`;
-      const estW = labelStr.length * 6.2;
-      const fits = bw >= estW + 10;
-      if (fits) {
+
+      const labelStr = shortOrg(b.exp.org);
+      const estW = labelStr.length * 6.5;
+      const above = i % 2 === 0;
+      if (narrow) {
+        // Stagger even and odd bands so short bands never collide.
+        const cx = Math.min(
+          Math.max(x1 + bw / 2, mLeft + estW / 2),
+          width - mRight - estW / 2,
+        );
+        b.label.setAttribute('x', String(cx));
+        b.label.setAttribute('y', String(above ? by - 5 : by + BAND_H + 12));
+        b.label.setAttribute('text-anchor', 'middle');
+        b.label.setAttribute(
+          'class',
+          b.current
+            ? 'tr-band-label tr-band-label--current tr-band-label--outside'
+            : 'tr-band-label tr-band-label--outside',
+        );
+      } else {
         b.label.setAttribute('x', String(x1 + bw / 2));
         b.label.setAttribute('y', String(by + BAND_H / 2 + 4));
         b.label.setAttribute('text-anchor', 'middle');
-        b.label.setAttribute('class', 'tr-band-label');
-        if (b.current) b.label.setAttribute('fill', 'var(--bg)');
-        else b.label.setAttribute('fill', 'var(--ink)');
-      } else {
-        b.label.setAttribute('x', String(x1));
-        b.label.setAttribute('y', String(by - 4));
-        b.label.setAttribute('text-anchor', 'start');
-        b.label.setAttribute('class', 'tr-band-label tr-band-label--above');
-        b.label.setAttribute('fill', 'var(--ink-2)');
+        b.label.setAttribute(
+          'class',
+          b.current ? 'tr-band-label tr-band-label--current' : 'tr-band-label',
+        );
       }
-    }
+    });
 
     // y ticks
-    ensureYTicks(sortedProjects.length);
-    yTicksCache.forEach((t, i) => {
+    yTickValues.forEach((t, i) => {
       const py = yScale(t);
       yGridLines[i].setAttribute('x1', String(mLeft));
       yGridLines[i].setAttribute('x2', String(width - mRight));
@@ -284,16 +304,15 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       yTickTexts[i].setAttribute('x', String(mLeft - 6));
       yTickTexts[i].setAttribute('y', String(py + 4));
       yTickTexts[i].setAttribute('text-anchor', 'end');
-      yTickTexts[i].textContent = String(t);
     });
 
-    // year ticks
-    for (const yt of yearTexts) {
-      const d = new Date(`${yt.y}-01-01T00:00:00Z`);
-      const px = xScale(d);
-      yt.el.setAttribute('x', String(px));
-      yt.el.setAttribute('y', String(totalH - 8));
-      yt.el.setAttribute('text-anchor', 'middle');
+    // quarterly ticks; half-yearly on mobile so the labels stay legible
+    for (const qt of quarterTexts) {
+      const hide = narrow && qt.d.getUTCMonth() % 6 !== 0;
+      qt.el.style.display = hide ? 'none' : '';
+      qt.el.setAttribute('x', String(xScale(qt.d)));
+      qt.el.setAttribute('y', String(totalH - 8));
+      qt.el.setAttribute('text-anchor', 'middle');
     }
 
     // step line
@@ -318,7 +337,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       di.circle.setAttribute('cy', String(cy));
     }
 
-    // crosshair rect
+    // crosshair hit area
     crossRect.setAttribute('x', String(mLeft));
     crossRect.setAttribute('y', String(plotTop));
     crossRect.setAttribute('width', String(width - mLeft - mRight));
@@ -332,20 +351,15 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     hairline.setAttribute('y1', String(plotTop));
     hairline.setAttribute('y2', String(plotBottom));
     hairline.style.opacity = '0';
-
-    lastWidth = width;
   }
 
   // crosshair interactions
   function onMove(e: PointerEvent) {
-    const rect = crossRect.getBoundingClientRect();
     const svgRect = svgEl.getBoundingClientRect();
     const px = e.clientX - svgRect.left;
-    const mLeft = LEFT_M;
-    const mRight = RIGHT_M;
     const width = Math.floor(el.clientWidth);
-    const plotLeft = mLeft;
-    const plotRight = width - mRight;
+    const plotLeft = LEFT_M;
+    const plotRight = width - RIGHT_M;
     const clamped = Math.max(plotLeft, Math.min(plotRight, px));
     const date = xScale.invert(clamped);
     // cumulative count

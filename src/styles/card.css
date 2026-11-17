@@ -79,7 +79,7 @@
 
 .cd-section {
   border-top: 1px solid var(--line);
-  padding-top: 18px;
+  padding: 18px 0 0;
 }
 .cd-label {
   margin-bottom: 12px;
@@ -183,6 +183,7 @@
 .cd-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
 .cd-lang-sq { width: 8px; height: 8px; border-radius: 2px; }
 .cd-lang-pct { color: var(--ink-2); }
+.cd-lang-empty { color: var(--ink-3); font-size: 13px; margin: 0; }
 
 @media (max-width: 639px) {
   .cd { width: 100%; border-left: 0; }

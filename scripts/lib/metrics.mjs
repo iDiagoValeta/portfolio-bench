@@ -71,3 +71,45 @@ export function recency(pushedAt, now) {
 export function index(craftScore, reachScore, recencyScore) {
   return Math.round(100 * (0.5 * craftScore + 0.25 * reachScore + 0.25 * recencyScore));
 }
+
+// ---- Retry policy (pure, so the wait decision can be unit-tested) ----
+
+const RETRY_BASE_MS = 1000;
+export const RETRY_MAX_ATTEMPTS = 4;
+
+function retryAfterMs(value, now) {
+  if (value == null) return null;
+  const text = String(value).trim();
+  if (text === '') return null;
+  const seconds = Number(text);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const at = Date.parse(text);
+  return Number.isFinite(at) ? Math.max(0, at - now) : null;
+}
+
+function resetMs(value, now) {
+  if (value == null) return null;
+  const seconds = Number(String(value).trim());
+  if (!Number.isFinite(seconds)) return null;
+  return Math.max(0, seconds * 1000 - now);
+}
+
+function isRateLimited(headers) {
+  const remaining = headers['x-ratelimit-remaining'];
+  return (remaining != null && Number(remaining) === 0) || headers['retry-after'] != null;
+}
+
+// How long to wait before the next attempt, in milliseconds. Returns null when
+// the response must not be retried. `attempt` is 1-based and `now` is epoch ms;
+// both are passed in so this function has no clock or network dependency.
+export function retryDelay({ status, headers = {}, attempt = 1, now = 0 } = {}) {
+  const retryable =
+    status === 429 ||
+    (status >= 500 && status <= 599) ||
+    (status === 403 && isRateLimited(headers));
+  if (!retryable) return null;
+
+  const backoff = RETRY_BASE_MS * 2 ** Math.max(0, attempt - 1);
+  const wait = retryAfterMs(headers['retry-after'], now) ?? resetMs(headers['x-ratelimit-reset'], now);
+  return Math.max(backoff, wait ?? 0);
+}

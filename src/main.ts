@@ -25,6 +25,9 @@ import * as card from './sections/card';
 const data = projectsData as Dataset;
 const profile = profileData as Profile;
 
+// The CV link lives in profile.json only; the static href in index.html is the no-JS fallback.
+document.querySelectorAll<HTMLAnchorElement>('a[data-cv]').forEach((a) => { a.href = profile.links.cv; });
+
 function mountAll(): void {
   const byMount = (name: string): HTMLElement | null =>
     document.querySelector<HTMLElement>(`[data-mount="${name}"]`);
@@ -64,7 +67,12 @@ if (eyebrow) {
 
 const sub = document.getElementById('hero-sub');
 if (sub) {
-  sub.textContent = `${profile.tagline} ${profile.role} · ${profile.location}`;
+  sub.textContent = profile.tagline;
+}
+
+const heroMeta = document.getElementById('hero-meta');
+if (heroMeta) {
+  heroMeta.textContent = `${profile.role} at ${profile.experience[0]?.org ?? 'Inditex'}, ${profile.location.split(',')[0]}`;
 }
 
 const toggle = document.getElementById('theme-toggle');

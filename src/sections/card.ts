@@ -3,6 +3,7 @@ import '../styles/card.css';
 import type { Checks, Dataset, Project } from '../types';
 import { h } from '../lib/dom';
 import { formatCompact } from '../lib/format';
+import { hideTip } from '../lib/tooltip';
 
 const CHECK_LABELS: { key: keyof Checks; label: string }[] = [
   { key: 'readme', label: 'README over 1500 characters' },
@@ -32,6 +33,7 @@ let opener: HTMLElement | null = null;
 let focusables: HTMLElement[] = [];
 let isOpen = false;
 let prevOverflow = '';
+let rootEl: HTMLElement | null = null;
 
 function flagLabel(f: string): string {
   return f.charAt(0).toUpperCase() + f.slice(1);
@@ -113,25 +115,42 @@ function fill(p: Project): void {
   }
 
   langsEl.innerHTML = '';
+  if (p.languages.length === 0) {
+    langsEl.append(h('p', { class: 'cd-lang-empty' }, 'No language data'));
+    return;
+  }
+  // Percentages are over the whole repo (all languages), not only the top 4.
+  const total = p.languages.reduce((sum, l) => sum + l.bytes, 0) || 1;
   const top = p.languages.slice(0, 4);
-  const total = top.reduce((sum, l) => sum + l.bytes, 0) || 1;
+  const otherBytes = p.languages.slice(4).reduce((sum, l) => sum + l.bytes, 0);
   // Neutral greys derived from ink so the stacked bar adapts to the theme; never category colours.
-  const greys = ['85%', '68%', '52%', '36%'];
+  const greys = ['85%', '68%', '52%', '36%', '20%'];
+  const entries: { name: string; bytes: number; grey: string }[] = top.map((l, i) => ({
+    name: l.name,
+    bytes: l.bytes,
+    grey: `color-mix(in srgb, var(--ink) ${greys[i]}, var(--surface))`,
+  }));
+  if (otherBytes > 0) {
+    entries.push({
+      name: 'Other',
+      bytes: otherBytes,
+      grey: `color-mix(in srgb, var(--ink) ${greys[4]}, var(--surface))`,
+    });
+  }
   const bar = h('div', { class: 'cd-lang-bar' });
   const legend = h('div', { class: 'cd-lang-legend' });
-  top.forEach((l, i) => {
-    const grey = `color-mix(in srgb, var(--ink) ${greys[i]}, var(--surface))`;
-    bar.append(h('i', { class: 'cd-lang-seg', style: `flex:${l.bytes} 1 0;background:${grey}` }));
+  for (const e of entries) {
+    bar.append(h('i', { class: 'cd-lang-seg', style: `flex:${e.bytes || 1} 1 0;background:${e.grey}` }));
     legend.append(
       h(
         'span',
         { class: 'cd-lang' },
-        h('i', { class: 'cd-lang-sq', style: `background:${grey}` }),
-        h('span', { class: 'cd-lang-name' }, l.name),
-        h('span', { class: 'cd-lang-pct num' }, `${Math.round((l.bytes / total) * 100)}%`),
+        h('i', { class: 'cd-lang-sq', style: `background:${e.grey}` }),
+        h('span', { class: 'cd-lang-name' }, e.name),
+        h('span', { class: 'cd-lang-pct num' }, `${Math.round((e.bytes / total) * 100)}%`),
       ),
     );
-  });
+  }
   langsEl.append(bar, legend);
 
   linksEl.innerHTML = '';
@@ -164,13 +183,32 @@ function onKeydown(e: KeyboardEvent): void {
   }
 }
 
+function setSiblingsInert(on: boolean): void {
+  const cr = rootEl ?? document.getElementById('card-root');
+  if (!cr || !cr.parentElement) return;
+  for (const el of Array.from(cr.parentElement.children)) {
+    if (el === cr) continue;
+    if (on) {
+      el.setAttribute('inert', '');
+      el.setAttribute('aria-hidden', 'true');
+    } else {
+      el.removeAttribute('inert');
+      el.removeAttribute('aria-hidden');
+    }
+  }
+}
+
 export function openCard(repo: string): void {
   const p = dataset.projects.find((x) => x.repo === repo);
   if (!p) return;
 
+  hideTip();
+
   if (!isOpen) {
     opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    prevOverflow = document.body.style.overflow;
+    prevOverflow = document.documentElement.style.overflow;
+    document.addEventListener('keydown', onKeydown);
+    setSiblingsInert(true);
   }
 
   fill(p);
@@ -180,7 +218,7 @@ export function openCard(repo: string): void {
   drawer.classList.add('is-open');
   drawer.toggleAttribute('inert', false);
   drawer.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
   isOpen = true;
 
   drawer.querySelector<HTMLElement>('.cd-close')?.focus();
@@ -193,7 +231,9 @@ function closeCard(): void {
   backdrop.classList.remove('is-open');
   drawer.toggleAttribute('inert', true);
   drawer.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = prevOverflow;
+  document.documentElement.style.overflow = prevOverflow;
+  document.removeEventListener('keydown', onKeydown);
+  setSiblingsInert(false);
   history.replaceState(null, '', location.pathname + location.search);
   isOpen = false;
 
@@ -203,6 +243,7 @@ function closeCard(): void {
 
 export function initCard(root: HTMLElement, data: Dataset): void {
   dataset = data;
+  rootEl = root;
 
   backdrop = h('div', { class: 'cd-backdrop' });
   drawer = h('aside', {
@@ -272,7 +313,6 @@ export function initCard(root: HTMLElement, data: Dataset): void {
   drawer.append(head, body);
 
   backdrop.addEventListener('click', closeCard);
-  drawer.addEventListener('keydown', onKeydown);
   root.append(backdrop, drawer);
 
   const match = /^#p\/(.+)$/.exec(location.hash);

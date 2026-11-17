@@ -8,6 +8,8 @@ import {
   parseLastPage,
   reach,
   recency,
+  retryDelay,
+  RETRY_MAX_ATTEMPTS,
 } from '../scripts/lib/metrics.mjs';
 
 const DAY_MS = 86_400_000;
@@ -154,4 +156,78 @@ test('index: weighted formula and rounding with hand-computed values', () => {
   assert.equal(index(0.5, 0.4, 0.22), 41);
   // 100 * (0.5*(3/7) + 0.125 + 0.125) = 46.4286 -> 46
   assert.equal(index(3 / 7, 0.5, 0.5), 46);
+});
+
+test('retry policy allows four attempts', () => {
+  assert.equal(RETRY_MAX_ATTEMPTS, 4);
+});
+
+test('retryDelay: successful and client-error statuses are never retried', () => {
+  for (const status of [200, 201, 301, 400, 401, 404, 422]) {
+    assert.equal(retryDelay({ status }), null, String(status));
+  }
+});
+
+test('retryDelay: 403 is retried only when rate-limit headers say so', () => {
+  assert.equal(retryDelay({ status: 403 }), null);
+  assert.equal(retryDelay({ status: 403, headers: { 'x-ratelimit-remaining': '42' } }), null);
+  assert.ok(retryDelay({ status: 403, headers: { 'x-ratelimit-remaining': '0' } }) > 0);
+  assert.ok(retryDelay({ status: 403, headers: { 'retry-after': '2' } }) > 0);
+});
+
+test('retryDelay: 429 and 5xx use exponential backoff without headers', () => {
+  assert.equal(retryDelay({ status: 429, attempt: 1 }), 1000);
+  assert.equal(retryDelay({ status: 500, attempt: 2 }), 2000);
+  assert.equal(retryDelay({ status: 503, attempt: 3 }), 4000);
+  assert.equal(retryDelay({ status: 502, attempt: 4 }), 8000);
+});
+
+test('retryDelay: retry-after in seconds is honoured', () => {
+  assert.equal(retryDelay({ status: 429, headers: { 'retry-after': '30' }, attempt: 1 }), 30_000);
+});
+
+test('retryDelay: retry-after as an HTTP date is honoured', () => {
+  const now = Date.parse('2026-11-17T00:00:00Z');
+  const delay = retryDelay({
+    status: 429,
+    headers: { 'retry-after': 'Tue, 17 Nov 2026 00:00:10 GMT' },
+    now,
+    attempt: 1,
+  });
+  assert.equal(delay, 10_000);
+});
+
+test('retryDelay: x-ratelimit-reset is honoured relative to now', () => {
+  const now = 1_800_000_000_000;
+  const reset = String(Math.floor(now / 1000) + 12);
+  const delay = retryDelay({
+    status: 403,
+    headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': reset },
+    now,
+    attempt: 1,
+  });
+  assert.equal(delay, 12_000);
+});
+
+test('retryDelay: retry-after takes precedence over reset', () => {
+  const now = 1_800_000_000_000;
+  const reset = String(Math.floor(now / 1000) + 60);
+  const delay = retryDelay({
+    status: 429,
+    headers: { 'retry-after': '5', 'x-ratelimit-reset': reset },
+    now,
+    attempt: 1,
+  });
+  assert.equal(delay, 5_000);
+});
+
+test('retryDelay: a past reset falls back to backoff and never goes negative', () => {
+  const now = 1_800_000_000_000;
+  const delay = retryDelay({
+    status: 429,
+    headers: { 'x-ratelimit-reset': '1' },
+    now,
+    attempt: 2,
+  });
+  assert.equal(delay, 2000);
 });

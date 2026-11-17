@@ -35,8 +35,13 @@
         <a href="#experience">Changelog</a>
         <a href="#methodology">Method</a>
       </div>
-      <button class="toggle" id="theme-toggle" aria-label="Toggle theme" type="button">◐</button>
-      <a class="pill" href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">CV</a>
+      <button class="toggle" id="theme-toggle" aria-label="Toggle theme" type="button">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+          <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+          <path d="M7 2a5 5 0 0 0 0 10z" fill="currentColor"></path>
+        </svg>
+      </button>
+      <a class="pill" data-cv href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">CV</a>
     </div>
   </nav>
 
@@ -46,26 +51,20 @@
         <p class="eyebrow" id="hero-eyebrow">Independent benchmarks · data as of —</p>
         <h1>Independent analysis of <em>one</em> AI engineer.</h1>
         <p class="sub" id="hero-sub"></p>
+        <p class="hero-meta mono" id="hero-meta"></p>
         <div class="actions">
           <a class="button primary" href="#index">Explore the index</a>
-          <a class="button" href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">Download CV</a>
+          <a class="button" data-cv href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">CV (PDF)</a>
         </div>
         <div data-mount="fingerprint" style="margin-top:40px;"></div>
-      </div>
-    </section>
-
-    <section id="highlights">
-      <div class="container">
-        <h2><span class="section-marker"></span>Headlines</h2>
-        <p class="dek">Three numbers from the CV, each with its source.</p>
-        <div data-mount="tiles" style="margin-top:24px;"></div>
+        <div data-mount="tiles" style="margin-top:56px;"></div>
       </div>
     </section>
 
     <section id="index">
       <div class="container">
         <h2><span class="section-marker"></span>Engineering Index</h2>
-        <p class="dek">Horizontal bar leaderboard of every public project, scored by the published formula.</p>
+        <p class="dek">Every public repo, scored on craft, reach and recency. Click a bar for its model card.</p>
         <div data-mount="leaderboard" style="margin-top:24px;"></div>
       </div>
     </section>
@@ -73,7 +72,7 @@
     <section id="effort">
       <div class="container">
         <h2><span class="section-marker"></span>Index vs. effort</h2>
-        <p class="dek">Commits on the default branch against the index. Top-left is most efficient.</p>
+        <p class="dek">Score against commits. Top-left means a high score for little effort.</p>
         <div data-mount="scatter" style="margin-top:24px;"></div>
       </div>
     </section>
@@ -81,7 +80,7 @@
     <section id="trajectory">
       <div class="container">
         <h2><span class="section-marker"></span>Trajectory</h2>
-        <p class="dek">Experience bands and the cumulative count of public projects over time.</p>
+        <p class="dek">Public projects shipped since 2025, set against the roles held at the time.</p>
         <div data-mount="trajectory" style="margin-top:24px;"></div>
       </div>
     </section>
@@ -89,7 +88,7 @@
     <section id="projects">
       <div class="container">
         <h2><span class="section-marker"></span>All projects</h2>
-        <p class="dek">Sortable table view of the same data.</p>
+        <p class="dek">The full results table. Sort any column, or open a row's card.</p>
         <div data-mount="table" style="margin-top:24px;"></div>
       </div>
     </section>
@@ -97,7 +96,7 @@
     <section id="experience">
       <div class="container">
         <h2><span class="section-marker"></span>Changelog</h2>
-        <p class="dek">Experience, education and skills.</p>
+        <p class="dek">Roles, education and the stack behind them.</p>
         <div data-mount="experience" style="margin-top:24px;"></div>
       </div>
     </section>
@@ -105,7 +104,7 @@
     <section id="methodology">
       <div class="container">
         <h2><span class="section-marker"></span>Methodology</h2>
-        <p class="dek">How the index is computed, the data date, and contact links.</p>
+        <p class="dek">One formula, public inputs, recomputed at every build.</p>
         <div data-mount="methodology" style="margin-top:24px;"></div>
       </div>
     </section>
