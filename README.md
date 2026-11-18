@@ -11,7 +11,7 @@ model card. All repository metrics come from the GitHub API at build time and ca
 pnpm install
 pnpm dev       # http://localhost:5190
 pnpm build     # type-check + vite build into dist/
-pnpm test      # node --test test/
+pnpm test      # node --test test/*.test.mjs
 ```
 
 ## Refresh the data
