@@ -8,25 +8,19 @@
     "linkedin": "https://www.linkedin.com/in/ignacio-diago-valeta-1234567891011121314/",
     "huggingface": "https://huggingface.co/nadiva1243",
     "email": "nadiva1243@gmail.com",
-    "cv": "https://github.com/iDiagoValeta/resume/blob/main/resume.pdf"
+    "cv": "https://github.com/iDiagoValeta/resume/raw/main/resume.pdf"
   },
   "headlines": [
     {
-      "value": "280+",
-      "unit": "PRs",
-      "label": "Reviewed pull requests merged as Technical Lead at Auro AI",
+      "value": "6",
+      "unit": "apps",
+      "label": "In the TypeScript monorepo I owned at Auro AI",
       "source": "Auro AI, 2026"
     },
     {
-      "value": "3",
-      "unit": "universities",
-      "label": "Served by GPT-CEU, the generative assistant I built and deployed at CEU",
-      "source": "Grupo CEU, 2025–2026"
-    },
-    {
-      "value": "6",
-      "unit": "apps",
-      "label": "In the TypeScript monorepo I owned, with zero-downtime deploys and rollback",
+      "value": "4",
+      "unit": "engineers",
+      "label": "In the team I led as Technical Lead at Auro AI",
       "source": "Auro AI, 2026"
     }
   ],

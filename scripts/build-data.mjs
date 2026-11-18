@@ -9,13 +9,17 @@ import { fileURLToPath } from 'node:url';
 
 import {
   checksFromTree,
+  computeFacts,
   craft,
+  depth,
   index as indexScore,
+  INDEX_WEIGHTS,
   parseLastPage,
-  reach,
   recency,
   retryDelay,
   RETRY_MAX_ATTEMPTS,
+  shipped as shippedScore,
+  statsDecision,
 } from './lib/metrics.mjs';
 
 const OWNER = 'iDiagoValeta';
@@ -99,6 +103,29 @@ async function commitCount(full, repo) {
   return Array.isArray(commits) ? commits.length : 0;
 }
 
+// 52 weekly commit totals, oldest first. GitHub answers 202 while it computes
+// them; after the retries we fail loudly instead of writing zeros.
+async function weeklyCommits(full, repo) {
+  const path = `/repos/${full}/stats/commit_activity`;
+  for (let attempt = 1; ; attempt++) {
+    const res = await ghGet(path, repo);
+    const decision = statsDecision({ status: res.status, attempt });
+    if (decision.action === 'done') {
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length !== 52) {
+        throw new Error(`[${repo}] ${path} returned ${Array.isArray(data) ? data.length : 'no'} weeks, expected 52`);
+      }
+      return data.map((week) => week.total);
+    }
+    await discardBody(res);
+    if (decision.action === 'fail') {
+      throw new Error(`[${repo}] ${path} still HTTP ${res.status} after ${attempt - 1} retries; refusing to write zeros`);
+    }
+    console.warn(`[${repo}] ${path} -> 202; retrying in ${decision.waitMs}ms (${attempt}/6).`);
+    await sleep(decision.waitMs);
+  }
+}
+
 async function readmeLength(full, repo) {
   const data = await getJson(`/repos/${full}/readme`, repo, { allow404: true });
   if (!data?.content) return 0;
@@ -154,12 +181,13 @@ async function fetchRepo(item) {
   if (meta.private) throw new Error(`[${repo}] curated repo is private`);
 
   const branch = meta.default_branch;
-  const [commits, paths, readmeLen, releases, langs] = await Promise.all([
+  const [commits, paths, readmeLen, releases, langs, weekly] = await Promise.all([
     commitCount(full, repo),
     treePaths(full, repo, branch),
     readmeLength(full, repo),
     getJson(`/repos/${full}/releases?per_page=1`, repo),
     languages(full, repo),
+    weeklyCommits(full, repo),
   ]);
 
   const checkFlags = checksFromTree(paths, meta, readmeLen, Array.isArray(releases) ? releases.length : 0);
@@ -173,6 +201,7 @@ async function fetchRepo(item) {
       releasesCount: Array.isArray(releases) ? releases.length : 0,
       languages: langs,
       checks: checkFlags,
+      weekly,
     },
   };
 }
@@ -184,13 +213,14 @@ async function main() {
 
   const gathered = await pooled(curation.projects, 5, fetchRepo);
 
-  // reach needs the maximum star count across every curated project.
-  const maxStars = gathered.reduce((max, g) => Math.max(max, g.meta.stargazers_count ?? 0), 0);
+  // depth is relative to the deepest curated repo.
+  const maxCommits = gathered.reduce((max, g) => Math.max(max, g.metrics.commits), 0);
 
   const projects = gathered.map(({ item, meta, metrics }) => {
     const craftScore = craft(metrics.checks);
-    const reachScore = reach(meta.stargazers_count ?? 0, maxStars);
+    const depthScore = depth(metrics.commits, maxCommits);
     const recencyScore = recency(meta.pushed_at, now);
+    const shipped = shippedScore(item.flags, item.url, metrics.checks.shipped);
     return {
       repo: item.repo,
       title: item.title,
@@ -207,19 +237,21 @@ async function main() {
       languages: metrics.languages,
       checks: metrics.checks,
       craft: craftScore,
-      reach: reachScore,
+      depth: depthScore,
+      weekly: metrics.weekly,
       recency: recencyScore,
-      index: indexScore(craftScore, reachScore, recencyScore),
+      shipped,
+      index: indexScore(depthScore, craftScore, recencyScore, shipped),
     };
   });
 
   projects.sort((a, b) => b.index - a.index || a.repo.localeCompare(b.repo));
 
-  const dataset = { asOf, categories: curation.categories, projects };
+  const dataset = { asOf, weights: INDEX_WEIGHTS, facts: computeFacts(projects, asOf), categories: curation.categories, projects };
   mkdirSync(dirname(OUTPUT), { recursive: true });
   writeFileSync(OUTPUT, `${JSON.stringify(dataset, null, 2)}\n`);
 
-  console.log(`Wrote ${OUTPUT} with ${projects.length} projects (as of ${asOf}, max stars ${maxStars}).`);
+  console.log(`Wrote ${OUTPUT} with ${projects.length} projects (as of ${asOf}, max commits ${maxCommits}).`);
 }
 
 main().catch((error) => {

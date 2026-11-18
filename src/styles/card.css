@@ -5,12 +5,12 @@
   background: rgba(0, 0, 0, 0.42);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 250ms ease, visibility 0s 250ms;
+  transition: opacity var(--dur-2, 320ms) ease, visibility 0s var(--dur-2, 320ms);
 }
 .cd-backdrop.is-open {
   opacity: 1;
   visibility: visible;
-  transition: opacity 250ms ease;
+  transition: opacity var(--dur-2, 320ms) ease;
 }
 
 .cd {
@@ -28,7 +28,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   transform: translateX(100%);
-  transition: transform 250ms ease;
+  transition: transform var(--dur-2, 320ms) var(--ease-out, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 .cd.is-open { transform: translateX(0); }
 
@@ -68,13 +68,14 @@
   gap: 22px;
   padding: 24px;
 }
-.cd-title { font-size: 2.1rem; }
+.cd-title { font-size: 2.1rem; width: fit-content; max-width: 100%; }
 .cd-liner { color: var(--ink-2); }
-.cd-chips, .cd-flags, .cd-links {
+.cd-chips, .cd-links {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+.cd-flag, .cd-chips .chip { white-space: nowrap; }
 .cd-flag { color: var(--ink-2); font-size: 12px; }
 
 .cd-section {
@@ -83,41 +84,39 @@
 }
 .cd-label {
   margin-bottom: 12px;
-  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  font-weight: 550;
+  color: var(--ink-2);
 }
 
-.cd-score-row { display: flex; align-items: center; gap: 20px; }
-.cd-score-mark {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex-shrink: 0;
-}
+.cd-score-row { display: flex; align-items: center; gap: 24px; }
+/* Big index scores use Doto (the number voice for >= 44px); small scores elsewhere use Martian Mono. */
 .cd-score-num {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 3.4rem;
+  flex-shrink: 0;
+  font-family: var(--font-score);
+  font-weight: 800;
+  font-size: 56px;
   line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
-/* Mini fingerprint under the big index: one 2px mark per project. */
-.cd-fp {
-  display: flex;
-  align-items: center;
+/* 52-week strip: one cell per week. */
+.cd-weekly {
+  display: grid;
+  grid-template-columns: repeat(52, minmax(0, 1fr));
   gap: 2px;
-  height: 8px;
 }
-.cd-fp-mark {
+.cd-wk {
   display: block;
-  width: 2px;
-  height: 8px;
-  flex: 0 0 2px;
-  border-radius: 1px;
-  background: var(--line);
+  height: 16px;
+  border-radius: 2px;
+  animation: cd-wk-in 0.35s ease backwards;
+  animation-delay: calc(var(--c, 0) * 8ms);
 }
+.cd-wk.zero { background: var(--line); }
+@keyframes cd-wk-in { from { transform: scaleY(0.2); opacity: 0; } }
 .cd-bars {
   flex: 1;
   display: flex;
@@ -160,14 +159,17 @@
   font-size: 13px;
   color: var(--ink-2);
 }
-.cd-check-icon {
-  width: 14px;
+.cd-check-dot {
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
-  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
-  color: var(--ink);
+  align-self: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
 }
+.cd-check[data-pass='true'] .cd-check-dot { background: var(--cat); border-color: var(--cat); }
 .cd-check[data-pass='false'] { color: var(--ink-3); }
-.cd-check[data-pass='false'] .cd-check-icon { color: var(--ink-3); }
 .cd-sr {
   position: absolute;
   width: 1px;
@@ -184,10 +186,10 @@
 }
 .cd-metric { display: flex; flex-direction: column; gap: 2px; }
 .cd-metric-label {
-  font-size: 11px;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  font-weight: 550;
+  color: var(--ink-2);
 }
 .cd-metric-value { font-size: 15px; color: var(--ink); }
 
@@ -210,9 +212,38 @@
   .cd { width: 100%; border-left: 0; }
   .cd-head { padding: 14px 16px; }
   .cd-body { padding: 20px 16px; gap: 18px; }
-  .cd-score-num { font-size: 2.8rem; }
+  .cd-score-num { font-size: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cd, .cd-backdrop { transition-duration: 0.001ms !important; }
+  .cd-wk { animation: none; }
 }
+
+.cd-shipped {
+  margin: 14px 0 0;
+  font-size: var(--fs-2);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.cd-shipped-state { color: var(--ink); font-weight: 550; }
+
+/* View transition: the drawer is placed instantly, the shared title does the moving. */
+.cd.cd-vt, .cd-backdrop.cd-vt { transition: none; }
+html[data-vt="card"]::view-transition-group(card-title) {
+  animation-duration: var(--dur-3, 600ms);
+  animation-timing-function: var(--ease-out, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+html[data-vt="card"]::view-transition-group(root) { animation-duration: var(--dur-2, 320ms); }
+
+/* Closing: the title travels back to its row but fades out first, so it never reads over unrelated text,
+   and the row's own title fades in at the end of the path. */
+html[data-vt="card-close"]::view-transition-group(card-title) {
+  animation-duration: var(--dur-2, 320ms);
+  animation-timing-function: var(--ease-out, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+html[data-vt="card-close"]::view-transition-group(root) { animation-duration: var(--dur-2, 320ms); }
+html[data-vt="card-close"]::view-transition-old(card-title) { animation: cd-vt-out 110ms linear both; mix-blend-mode: normal; }
+html[data-vt="card-close"]::view-transition-new(card-title) { animation: cd-vt-in 120ms linear 200ms both; mix-blend-mode: normal; }
+@keyframes cd-vt-out { to { opacity: 0; } }
+@keyframes cd-vt-in { from { opacity: 0; } to { opacity: 1; } }

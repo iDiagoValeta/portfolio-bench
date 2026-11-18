@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ignacio Diago Valeta · AI Engineer</title>
-  <meta name="description" content="Independent analysis of one AI engineer: public projects scored as models, with an engineering index, effort scatter, trajectory and a model card per project." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%232a78d6%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%220%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%23eb6834%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%229%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%231baf7a%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%230b0b0b%22%2F%3E%3C%2Fsvg%3E" />
+  <title>Ignacio Diago Valeta, AI Engineer</title>
+  <meta name="description" content="Ignacio Diago Valeta, AI engineer. Public repositories measured as a benchmark: engineering index, shipped work, craft and trajectory." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%234a85df%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%220%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%23e16a3c%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%229%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%23009b85%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%227%22%20height%3D%227%22%20fill%3D%22%23141413%22%2F%3E%3C%2Fsvg%3E" />
   <script>
     (function () {
+      document.documentElement.classList.add('js');
       try {
         var t = localStorage.getItem('theme');
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
@@ -20,19 +21,16 @@
     <div class="container">
       <a class="wordmark" href="#hero">
         <span class="mark" aria-hidden="true">
-          <i style="background:var(--cat-llm)"></i>
+          <i style="background:var(--cat-retrieval)"></i>
           <i style="background:var(--cat-agents)"></i>
-          <i style="background:var(--cat-ml)"></i>
+          <i style="background:var(--cat-pipelines)"></i>
           <i style="background:var(--ink)"></i>
         </span>
         Ignacio Diago Valeta
       </a>
       <div class="links">
         <a href="#index">Index</a>
-        <a href="#effort">Effort</a>
         <a href="#trajectory">Trajectory</a>
-        <a href="#projects">Projects</a>
-        <a href="#experience">Changelog</a>
         <a href="#methodology">Method</a>
       </div>
       <button class="toggle" id="theme-toggle" aria-label="Toggle theme" type="button">
@@ -41,71 +39,67 @@
           <path d="M7 2a5 5 0 0 0 0 10z" fill="currentColor"></path>
         </svg>
       </button>
-      <a class="pill" data-cv href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">CV</a>
+      <a class="pill" data-cv href="https://github.com/iDiagoValeta/resume/raw/main/resume.pdf" target="_blank" rel="noopener">CV</a>
     </div>
+    <div class="progress" aria-hidden="true"></div>
   </nav>
 
   <main>
     <section class="hero" id="hero">
       <div class="container">
-        <p class="eyebrow" id="hero-eyebrow">Independent benchmarks · data as of —</p>
-        <h1>Independent analysis of <em>one</em> AI engineer.</h1>
-        <p class="sub" id="hero-sub"></p>
-        <p class="hero-meta mono" id="hero-meta"></p>
-        <div class="actions">
-          <a class="button primary" href="#index">Explore the index</a>
-          <a class="button" data-cv href="https://github.com/iDiagoValeta/resume/blob/main/resume.pdf" target="_blank" rel="noopener">CV (PDF)</a>
+        <div class="grid-12 hero-grid">
+          <div class="span-7 hero-copy">
+            <p class="eyebrow" id="hero-eyebrow"><span>Ignacio Diago Valeta, AI Engineer. Public benchmark measured on <span data-fact="asOfLong" style="white-space:nowrap"></span></span></p>
+            <h1>A&nbsp;generative assistant for three universities. A&nbsp;WhatsApp bill reader at Auro&nbsp;AI. Now AI&nbsp;Engineer at Inditex.</h1>
+            <p class="sub">I build LLM systems that reach real users. That work is private, so below I score my public repos with one published formula. Every number is measured from GitHub or taken from my CV.</p>
+            <div class="actions">
+              <a class="button primary" href="#index">Explore the index</a>
+              <a class="button" data-cv href="https://github.com/iDiagoValeta/resume/raw/main/resume.pdf" target="_blank" rel="noopener">CV (PDF)</a>
+            </div>
+          </div>
+          <div class="span-5 hero-rose" data-mount="rose"></div>
+          <div class="span-7 hero-proof" data-mount="proof"></div>
         </div>
-        <div data-mount="fingerprint" style="margin-top:40px;"></div>
-        <div data-mount="tiles" style="margin-top:56px;"></div>
       </div>
     </section>
 
-    <section id="index">
+    <section class="wash-apricot" id="index">
       <div class="container">
-        <h2><span class="section-marker"></span>Engineering Index</h2>
-        <p class="dek">Every public repo, scored on craft, reach and recency. Click a bar for its model card.</p>
-        <div data-mount="leaderboard" style="margin-top:24px;"></div>
+        <header class="sec-head reveal">
+          <div>
+            <h2><span class="section-marker" aria-hidden="true"></span>Engineering index</h2>
+            <p class="dek"><span data-fact="repos"></span> public repos, ranked on depth, craft, recency and whether they shipped.</p>
+          </div>
+        </header>
+        <div data-mount="leaderboard"></div>
       </div>
     </section>
 
-    <section id="effort">
+    <section class="wash-lilac" id="trajectory">
       <div class="container">
-        <h2><span class="section-marker"></span>Index vs. effort</h2>
-        <p class="dek">Score against commits. Top-left means a high score for little effort.</p>
-        <div data-mount="scatter" style="margin-top:24px;"></div>
-      </div>
-    </section>
-
-    <section id="trajectory">
-      <div class="container">
-        <h2><span class="section-marker"></span>Trajectory</h2>
-        <p class="dek">Public projects shipped since 2025, set against the roles held at the time.</p>
-        <div data-mount="trajectory" style="margin-top:24px;"></div>
-      </div>
-    </section>
-
-    <section id="projects">
-      <div class="container">
-        <h2><span class="section-marker"></span>All projects</h2>
-        <p class="dek">The full results table. Sort any column, or open a row's card.</p>
-        <div data-mount="table" style="margin-top:24px;"></div>
-      </div>
-    </section>
-
-    <section id="experience">
-      <div class="container">
-        <h2><span class="section-marker"></span>Changelog</h2>
-        <p class="dek">Where the work happened, newest first.</p>
-        <div data-mount="experience" style="margin-top:24px;"></div>
+        <header class="sec-head reveal">
+          <div>
+            <h2><span class="section-marker" aria-hidden="true"></span>Trajectory</h2>
+            <p class="dek">From coursework to agent tooling in under two years.</p>
+          </div>
+        </header>
+        <div class="grid-12">
+          <div class="span-8 card reveal" data-mount="trajectory"></div>
+          <div class="span-4 card reveal" data-mount="experience"></div>
+        </div>
       </div>
     </section>
 
     <section id="methodology">
       <div class="container">
-        <h2><span class="section-marker"></span>Methodology</h2>
-        <p class="dek">One formula, public inputs, recomputed at every build.</p>
-        <div data-mount="methodology" style="margin-top:24px;"></div>
+        <header class="sec-head reveal">
+          <div>
+            <h2><span class="section-marker" aria-hidden="true"></span>Methodology</h2>
+            <p class="dek">One formula, public inputs, recomputed at every build.</p>
+          </div>
+        </header>
+        <div data-mount="methodology"></div>
+        <div data-mount="colophon"></div>
       </div>
     </section>
   </main>

@@ -1,181 +1,178 @@
-/* Changelog (experience, education) and methodology + footer. */
+/* Experience and education: compact vertical timeline inside the trajectory aside. */
+
+.xp-label {
+  margin: 0 0 12px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  font-weight: 550;
+  color: var(--ink-2);
+}
+.xp-label:not(:first-child) {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
 
 .xp-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 20px;
+  position: relative;
   display: flex;
   flex-direction: column;
+  gap: 11px;
 }
-
-.xp-entry {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  column-gap: 28px;
-  padding: 18px 0;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  transition-delay: calc(var(--i, 0) * 55ms);
-}
-.xp.is-visible .xp-entry {
-  opacity: 1;
-  transform: none;
-}
-
-.xp-date {
-  padding-top: 4px;
-  font-size: 12.5px;
-  color: var(--ink-3);
-  white-space: nowrap;
-}
-
-/* The vertical rule is a pseudo-element with a 20px overhang on both ends,
-   so it stays continuous across any entry padding without per-variant offsets. */
-.xp-body {
-  position: relative;
-  padding-left: 26px;
-}
-.xp-body::before {
+/* The rail. */
+.xp-list::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: -20px;
-  bottom: -20px;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
   width: 1px;
   background: var(--line);
 }
-.xp-list > .xp-entry:first-child .xp-body::before {
-  top: 9px;
+
+.xp-entry {
+  position: relative;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--dur-3, 600ms) var(--ease-out, ease), transform var(--dur-3, 600ms) var(--ease-out, ease);
+  transition-delay: calc(var(--i, 0) * 55ms);
 }
-.xp-list > .xp-entry:last-child .xp-body::before {
-  bottom: auto;
-  height: 29px;
-}
+.xp.is-visible .xp-entry { opacity: 1; transform: none; }
 
 .xp-dot {
   position: absolute;
-  left: 0;
-  top: 6px;
+  left: -20px;
+  top: 4px;
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  transform: translateX(-50%);
-  background: var(--bg);
+  background: var(--surface);
   border: 1.5px solid var(--ink-3);
-  box-shadow: 0 0 0 2.5px var(--bg);
 }
 .xp-entry--current .xp-dot {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-.xp-role {
-  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.25;
+.xp-date {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--ink-3);
+  white-space: nowrap;
 }
+.xp-role {
+  margin-top: 1px;
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.xp-role--edu { font-size: var(--fs-2); }
 .xp-org {
-  margin-top: 2px;
-  font-size: 13px;
+  margin: 1px 0 0;
+  font-size: var(--fs-1);
+  line-height: 1.35;
   color: var(--ink-2);
 }
 .xp-note {
-  margin-top: 6px;
-  font-size: 14px;
-  color: var(--ink-2);
-  max-width: 60ch;
-}
-
-.xp-sub {
-  margin: 44px 0 0;
-  padding-top: 32px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.xp-list--edu {
-  margin-top: 8px;
-}
-.xp-entry--edu {
-  padding: 12px 0;
-}
-.xp-role--edu {
-  font-size: 15px;
-}
-
-@media (max-width: 639px) {
-  .xp-entry {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 2px;
-    padding: 16px 0;
-  }
-  .xp-date {
-    padding-top: 0;
-    padding-left: 26px;
-  }
-}
-
-/* Methodology */
-
-.md {
-  max-width: 720px;
-}
-
-.md-formula {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.md-line {
-  font-size: 13px;
+  margin: 3px 0 0;
+  font-size: var(--fs-1);
+  line-height: 1.38;
   color: var(--ink-2);
 }
-.md-var {
-  display: inline-block;
-  width: 8ch;
+.xp-list--edu { gap: 10px; }
+
+/* A related line from the CV, attached to the role it belongs to. */
+.xp-also {
+  margin: 6px 0 0;
+  padding-top: 5px;
+  border-top: 1px dashed var(--line);
+  font-size: var(--fs-1);
+  line-height: 1.38;
+  color: var(--ink-2);
+}
+.xp-also-k { margin-right: 6px; color: var(--ink-3); font-size: 10.5px; }
+
+/* Scroll-driven: the rail draws down and entries rise as the card scrolls through the viewport. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .xp-list::before {
+      transform-origin: top;
+      animation: xp-rail linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 55%;
+    }
+    .xp-entry {
+      opacity: 1;
+      transform: none;
+      transition: none;
+      animation: xp-rise var(--ease-out, ease) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 90%;
+    }
+  }
+}
+@keyframes xp-rail { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes xp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-entry { transition: none !important; opacity: 1 !important; transform: none !important; }
+}
+
+/* Methodology and footer */
+
+.md-card {
+  padding: 36px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+.md-lead {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
   color: var(--ink);
 }
-
-.md-label {
-  margin-top: 28px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.md-checks {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-}
-.md-checks li {
+.md-formula {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-mist) 12%, var(--surface));
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-  color: var(--ink-2);
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-2);
+  line-height: 1.6;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
-.md-check-sq {
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--ink-3);
-  border-radius: 1px;
-  flex-shrink: 0;
+.md-formula-k { color: var(--ink-3); font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.08em; }
+.md-parts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px 32px;
 }
+.md-part-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.md-part-name { font-family: var(--font-display); font-size: var(--fs-3); font-weight: 600; }
+.md-part-w { font-size: var(--fs-2); color: var(--ink-2); }
+.md-part-def { margin: 0; font-size: var(--fs-2); line-height: 1.45; color: var(--ink-2); }
 
 .md-data {
-  margin-top: 28px;
-  font-size: 13.5px;
+  margin-top: 24px;
+  font-size: var(--fs-2);
   color: var(--ink-2);
+  max-width: 64ch;
 }
-
 .md-footer {
   margin-top: 56px;
   padding-top: 24px;
@@ -186,33 +183,24 @@
   gap: 16px 32px;
   flex-wrap: wrap;
 }
-.md-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 22px;
-}
+.md-links { display: flex; flex-wrap: wrap; gap: 10px 22px; }
 .md-links a {
-  font-size: 13.5px;
-  color: var(--ink-2);
+  font-size: var(--fs-2);
+  color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-color: var(--ink-3);
+  transition: text-decoration-color 0.15s ease;
 }
-.md-links a:hover {
-  color: var(--ink);
-  text-decoration-color: var(--ink);
-}
-.md-copy {
-  font-size: 12px;
-  color: var(--ink-3);
-}
+.md-links a:hover { text-decoration-color: var(--ink); }
+.md-copy { margin: 0; font-size: var(--fs-1); color: var(--ink-3); }
 
+@media (max-width: 1023px) {
+  .md-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 639px) {
-  .md-checks {
-    grid-template-columns: 1fr;
-  }
-  .md-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .md-card { padding: 20px; }
+  .md-lead { font-size: var(--fs-4); }
+  .md-parts { grid-template-columns: 1fr; gap: 18px; }
+  .md-footer { flex-direction: column; align-items: flex-start; }
 }

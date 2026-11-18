@@ -1,37 +1,118 @@
 :root {
-  --bg: #fcfcfb;
+  color-scheme: light;
+  /* Fonts: the @fontsource-variable families register as '<Name> Variable'. */
+  --font-display: 'Funnel Display Variable', system-ui, sans-serif;
+  --font-ui: 'Funnel Sans Variable', system-ui, sans-serif;
+  --font-data: 'Martian Mono Variable', ui-monospace, monospace;
+  --font-score: 'Doto Variable', ui-monospace, monospace;
+
+  /* Type scale */
+  --fs-1: 12px;
+  --fs-2: 13px;
+  --fs-3: 16px;
+  --fs-4: 20px;
+  --fs-5: 28px;
+  --fs-6: 40px;
+  --fs-7: clamp(44px, 6vw, 80px);
+  --fs-score: clamp(64px, 8vw, 96px);
+
+  /* Motion system (shared). Durations 180/320/600ms; --ease-spring only for small pops. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-1: 180ms;
+  --dur-2: 320ms;
+  --dur-3: 600ms;
+
+  /* Rhythm */
+  --section-gap: 72px;
+  --radius-card: 18px;
+  --grid-gap: 24px;
+
+  /* Paper grain: SVG noise, applied on body at 3% opacity. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.03;
+
+  --bg: #f7f5f0;
   --surface: #ffffff;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-3: #8a8984;
-  --line: #e8e7e3;
-  --cat-llm: #2a78d6;
-  --cat-agents: #eb6834;
-  --cat-ml: #1baf7a;
+  --ink: #141413;
+  --ink-2: #55534d;
+  --ink-3: #8a877f;
+  --line: #e7e3da;
+  --cat-retrieval: #4a85df;
+  --cat-agents: #e16a3c;
+  --cat-pipelines: #009b85;
+  --cat-finetune: #d09b00;
+  --cat-safety: #cc5fa5;
+  --cat-vision: #669a3a;
+  --cat-foundations: #7a65d1;
+  --wash-mist: #e5edfb;
+  --wash-apricot: #fbeadf;
+  --wash-mint: #dff2ec;
+  --wash-butter: #f8eed0;
+  --wash-lilac: #ece6fa;
+  --accent-mist: #4a85df;
+  --accent-apricot: #e16a3c;
+  --accent-mint: #009b85;
+  --accent-butter: #bd8800;
+  --accent-lilac: #7a65d1;
+}
+
+@media (max-width: 639px) {
+  :root { --section-gap: 48px; }
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #121211;
     --surface: #1a1a19;
-    --ink: #f0efec;
-    --ink-2: #c3c2b7;
-    --ink-3: #8f8e87;
-    --line: #2a2a28;
-    --cat-llm: #3987e5;
-    --cat-agents: #d95926;
-    --cat-ml: #199e70;
+    --ink: #f0efea;
+    --ink-2: #c3c1b8;
+    --ink-3: #8f8d85;
+    --line: #2b2a27;
+    --cat-retrieval: #538be3;
+    --cat-agents: #db6c42;
+    --cat-pipelines: #069f89;
+    --cat-finetune: #b98c19;
+    --cat-safety: #cc66a7;
+    --cat-vision: #699e3d;
+    --cat-foundations: #8c7ae0;
+    --wash-mist: color-mix(in srgb, var(--accent-mist) 11%, var(--bg));
+    --wash-apricot: color-mix(in srgb, var(--accent-mist) 7%, var(--bg));
+    --wash-mint: color-mix(in srgb, var(--accent-mint) 11%, var(--bg));
+    --wash-butter: color-mix(in srgb, var(--accent-butter) 11%, var(--bg));
+    --wash-lilac: color-mix(in srgb, var(--accent-lilac) 11%, var(--bg));
+    --accent-mist: #538be3;
+    --accent-apricot: #db6c42;
+    --accent-mint: #069f89;
+    --accent-butter: #d9a21b;
+    --accent-lilac: #8c7ae0;
   }
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #121211;
   --surface: #1a1a19;
-  --ink: #f0efec;
-  --ink-2: #c3c2b7;
-  --ink-3: #8f8e87;
-  --line: #2a2a28;
-  --cat-llm: #3987e5;
-  --cat-agents: #d95926;
-  --cat-ml: #199e70;
+  --ink: #f0efea;
+  --ink-2: #c3c1b8;
+  --ink-3: #8f8d85;
+  --line: #2b2a27;
+  --cat-retrieval: #538be3;
+  --cat-agents: #db6c42;
+  --cat-pipelines: #069f89;
+  --cat-finetune: #b98c19;
+  --cat-safety: #cc66a7;
+  --cat-vision: #699e3d;
+  --cat-foundations: #8c7ae0;
+  --wash-mist: color-mix(in srgb, var(--accent-mist) 11%, var(--bg));
+  --wash-apricot: color-mix(in srgb, var(--accent-mist) 7%, var(--bg));
+  --wash-mint: color-mix(in srgb, var(--accent-mint) 11%, var(--bg));
+  --wash-butter: color-mix(in srgb, var(--accent-butter) 11%, var(--bg));
+  --wash-lilac: color-mix(in srgb, var(--accent-lilac) 11%, var(--bg));
+  --accent-mist: #538be3;
+  --accent-apricot: #db6c42;
+  --accent-mint: #069f89;
+  --accent-butter: #d9a21b;
+  --accent-lilac: #8c7ae0;
 }

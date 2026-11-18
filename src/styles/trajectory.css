@@ -1,89 +1,117 @@
-.tr {
-  position: relative;
+/* Trajectory: cumulative repos as area + line, role bands on top. */
+[data-mount='trajectory'] {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  /* Dark mode draws the current band as a thin ink outline, not a light slab
-     that would be the brightest thing on the page. */
-  --tr-band-current: var(--ink);
+  position: relative;
 }
 
-/* Heading row: title left, trend counter right, both bottom-aligned. */
-.tr-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
+/* Key: what the marks mean and the three outcomes. It sits in the empty top-left of the plot
+   (placed by trajectory.ts) and flows above the chart on narrow screens. */
+.tr-key {
+  position: absolute;
+  z-index: 1;
+  width: min(264px, 42%);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
 }
-.tr-tile {
+.tr-key-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  color: var(--ink-2);
+}
+.tr-key-dot, .tr-key-ring { flex: none; border-radius: 50%; }
+.tr-key-dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 18px 0 1px;
+  background: var(--cat-agents);
+  box-shadow: 9px 0 0 var(--cat-retrieval), 18px 0 0 var(--cat-vision);
+}
+.tr-key-ring {
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  margin: 0 18px 0 0;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+.tr-key-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+}
+.tr-key-out {
+  display: block;
+  width: 100%;
+  padding: 0 0 0 10px;
   border: 0;
+  border-left: 3px solid var(--c, var(--ink-3));
   background: none;
-  padding: 0;
-  text-align: right;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
-.tr-tile-num {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-weight: 400;
-  font-size: 40px;
-  line-height: 1;
-  color: var(--ink);
-}
-.tr-tile-lab {
-  font-size: 11px;
-  color: var(--ink-3);
+.tr-key-out:hover .tr-key-t, .tr-key-out:focus-visible .tr-key-t { text-decoration: underline; text-underline-offset: 3px; }
+.tr-key-out:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tr-key-t { display: block; font-family: var(--font-ui); font-size: var(--fs-2); font-weight: 600; color: var(--ink); }
+.tr-key-s { display: block; font-family: var(--font-data); font-size: var(--fs-1); color: var(--ink-2); }
+
+.tr {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 380px;
+  /* The card is white; the lilac accent only tints marks and the band wash. */
+  --tr-band: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
 
 .tr-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
-  width: 100%;
-  height: auto;
   overflow: visible;
 }
 
 /* Grid and axes recessive. */
-.tr-gridline {
-  stroke: var(--line);
-  stroke-width: 1;
-}
+.tr-gridline { stroke: var(--line); stroke-width: 1; }
 .tr-tick {
-  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-family: var(--font-data);
+  font-size: var(--fs-1);
   fill: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
-.tr-tick-y {
-  font-size: 10px;
-}
+.tr-tick-y { font-size: 10px; }
 
-/* Experience bands: past roles are quiet, the current role carries the ink. */
-.tr-band {
-  rx: 4;
-  ry: 4;
-  fill: var(--line);
-  stroke: none;
-}
-.tr-band--current {
-  fill: var(--tr-band-current);
-}
+/* Roles: past ones are a pale accent wash, the current one is an ink outline. */
+.tr-band { rx: 6; ry: 6; fill: var(--tr-band); stroke: none; }
+.tr-band--current { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .tr-band-label {
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  font-weight: 550;
   fill: var(--ink);
   pointer-events: none;
 }
-.tr-band-label--current {
-  fill: var(--bg);
-}
-/* Staggered mobile labels sit outside the band, so they use the page ink. */
-.tr-band-label--outside {
-  fill: var(--ink-2);
-}
+.tr-band--bracket { fill: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+.tr-band--bracket.tr-band--current { fill: var(--ink); stroke: none; }
+.tr-band-label--narrow { font-size: var(--fs-1); fill: var(--ink-2); }
+.tr-band-label--narrow.tr-band-label--current { fill: var(--ink); }
+.tr-band-label--outside { fill: var(--ink-2); }
+.tr-rule { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
 
-/* Step line. */
+/* Area, then line. */
+.tr-area { opacity: 0; pointer-events: none; transition: opacity var(--dur-3, 600ms) var(--ease-out, ease); }
+.tr.is-area .tr-area { opacity: 1; }
 .tr-line {
   fill: none;
   stroke: var(--ink);
@@ -93,40 +121,34 @@
   pointer-events: none;
 }
 
-/* Final cumulative count at the end of the line. */
-.tr-end-label {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-weight: 400;
-  font-size: 20px;
-  fill: var(--ink);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-}
-.tr.is-in .tr-end-label {
-  opacity: 1;
-}
+/* The end of the line is a tick labelled "Today". */
+.tr-today-tick { stroke: var(--ink); stroke-width: 1.5; }
+.tr-today { fill: var(--ink); font-weight: 600; }
 
-/* Dots. */
+/* Role starts: a ring on the line where each role begins. */
+.tr-role-mark {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 2;
+  cursor: help;
+  outline: none;
+}
+.tr-role-mark:hover, .tr-role-mark:focus-visible { fill: var(--ink); }
+
+/* Dots: category colour, surface ring. */
 .tr-dot {
   opacity: 0;
-  transform: scale(0.4);
+  stroke: var(--surface);
+  stroke-width: 2;
   transform-box: fill-box;
   transform-origin: center;
   cursor: pointer;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform var(--dur-1, 180ms) var(--ease-out, ease);
 }
-.tr.is-in .tr-dot {
-  opacity: 1;
-  transform: scale(1);
-}
-.tr-dot:focus-visible {
-  outline: none;
-}
-.tr-dot:focus-visible {
-  stroke: var(--ink);
-  stroke-width: 2.5;
-}
+.tr.is-in .tr-dot { opacity: 1; animation: tr-pop var(--dur-3, 600ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards; animation-delay: calc(var(--i, 0) * 32ms); }
+.tr-dot:hover { transform: scale(1.35); }
+.tr-dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2.5; transform: scale(1.35); }
+@keyframes tr-pop { from { opacity: 0; transform: scale(0.3); } }
 
 /* Hairline crosshair. */
 .tr-hair {
@@ -136,57 +158,57 @@
   pointer-events: none;
   transition: opacity 0.12s ease;
 }
-
-.tr-crossrect {
-  cursor: crosshair;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .tr {
-    --tr-band-current: transparent;
-  }
-  :root:not([data-theme='light']) .tr .tr-band--current {
-    stroke: var(--ink);
-    stroke-width: 1;
-  }
-  :root:not([data-theme='light']) .tr .tr-band-label--current {
-    fill: var(--ink);
-  }
-}
-:root[data-theme='dark'] .tr {
-  --tr-band-current: transparent;
-}
-:root[data-theme='dark'] .tr .tr-band--current {
-  stroke: var(--ink);
-  stroke-width: 1;
-}
-:root[data-theme='dark'] .tr .tr-band-label--current {
-  fill: var(--ink);
-}
+.tr-crossrect { cursor: crosshair; }
 
 @media (max-width: 639px) {
-  .tr-tile-num {
-    font-size: 34px;
-  }
-  .tr-tick {
-    font-size: 10px;
-  }
+  .tr { min-height: 0; }
+  /* The chart starts right under the header; the key follows it as two compact columns. */
+  .tr-key { position: static; order: 2; width: auto; margin: 12px 0 0; padding: 10px 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+  .tr-key-row { margin: 0; font-size: var(--fs-1); gap: 8px; }
+  .tr-key-list { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 6px 0 0; padding-top: 8px; gap: 8px 12px; }
+  .tr-key-list li:last-child { grid-column: 1 / -1; }
 }
 
+/* Scroll-driven draw. The card is the timeline; the line is drawn as it scrolls through the viewport and
+   every dot, role mark and note appears when the line reaches it (--ps/--pe are set per element in
+   trajectory.ts). Without support, trajectory.ts plays the same sequence once with the classes above. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .tr--sd { view-timeline: --tr block; }
+    .tr--sd .tr-line {
+      stroke-dasharray: 1;
+      animation: tr-draw linear both;
+      animation-timeline: --tr;
+      animation-range: cover var(--tr-a, 4%) cover var(--tr-b, 44%);
+    }
+    .tr--sd .tr-area {
+      opacity: 1;
+      transition: none;
+      animation: tr-fade linear both;
+      animation-timeline: --tr;
+      animation-range: cover calc(var(--tr-b, 44%) - 8%) cover calc(var(--tr-b, 44%) + 8%);
+    }
+    .tr.tr--sd .tr-dot {
+      opacity: 1;
+      animation: tr-pop-sd var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+      animation-timeline: --tr;
+      animation-range: cover var(--ps, 4%) cover var(--pe, 44%);
+    }
+    .tr--sd .tr-role-mark {
+      transition: none;
+      animation: tr-fade linear both;
+      animation-timeline: --tr;
+      animation-range: cover var(--ps, 4%) cover var(--pe, 44%);
+    }
+  }
+}
+@keyframes tr-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes tr-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tr-pop-sd { from { opacity: 0; scale: 0.2; } to { opacity: 1; scale: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .tr-dot {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .tr-line {
-    transition: none !important;
-  }
-  .tr-hair {
-    transition: none !important;
-  }
-  .tr-end-label {
-    transition: none !important;
-    opacity: 1 !important;
-  }
+  .tr-area, .tr-hair { transition: none !important; }
+  .tr-area, .tr-dot { opacity: 1 !important; }
+  .tr-dot { animation: none !important; transition: none !important; }
+  .tr-line { transition: none !important; }
 }

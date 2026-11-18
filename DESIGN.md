@@ -1,110 +1,115 @@
 # Design
 
 A personal portfolio that reads like an independent AI benchmarking site. Every public
-project is a "model" under evaluation; the visitor compares them on a few charts and opens
-a model card for detail. Minimal: few numbers, all of them real or derived by a stated formula.
+repository is a "model" under evaluation. Each section answers one question a
+hiring manager asks. Minimal: few numbers,
+all real or derived by a stated formula.
 
 ## Principles
 
 - Real data only. Repository metrics come from the GitHub API at build time and carry an
-  "as of" date. The index is computed by a published formula (see Methodology). CV facts
-  come from `data/profile.json`.
-- One idea per section, one chart per idea. No dashboards of twenty tiles.
-- Light paper surface, black ink, three category colours. Colour means category, nothing else.
-- Motion explains (bars grow to their value, the timeline draws left to right) and always
-  respects `prefers-reduced-motion`.
+  "as of" date. CV facts live in `data/profile.json`. Copy never hard-codes a count: it reads
+  `data.facts` through `[data-fact]` attributes.
+- One question per section, one chart form per question.
+- Colour carries meaning. A category colour marks data (dots, bars, cells, petals), never
+  text. Each section has a pale wash and a deeper accent that tints only marks and the
+  section marker.
+- Motion explains and always respects `prefers-reduced-motion`. Charts animate once, when
+  they become visible.
 
 ## Tokens (`src/styles/tokens.css`)
 
 | Role | Light | Dark |
 |---|---|---|
-| `--bg` page | `#fcfcfb` | `#121211` |
+| `--bg` page (warm paper, 3% grain on top) | `#f7f5f0` | `#121211` |
 | `--surface` card | `#ffffff` | `#1a1a19` |
-| `--ink` primary text | `#0b0b0b` | `#f0efec` |
-| `--ink-2` secondary | `#52514e` | `#c3c2b7` |
-| `--ink-3` muted / axis | `#8a8984` | `#8f8e87` |
-| `--line` hairline / grid | `#e8e7e3` | `#2a2a28` |
-| `--cat-llm` (slot 1, blue) | `#2a78d6` | `#3987e5` |
-| `--cat-agents` (slot 2, orange) | `#eb6834` | `#d95926` |
-| `--cat-ml` (slot 3, aqua) | `#1baf7a` | `#199e70` |
+| `--ink` / `--ink-2` / `--ink-3` | `#141413` / `#55534d` / `#8a877f` | `#f0efea` / `#c3c1b8` / `#8f8d85` |
+| `--line` hairline, grid | `#e7e3da` | `#2b2a27` |
 
-The three category colours are slots 1 to 3 of a validated categorical palette: they pass
-the colour-blind separation checks for every pair, so they are safe in the scatter. Aqua is
-below 3:1 on the light surface, so every chart with colour also has direct labels or the
-table. Never add a fourth category colour.
+Seven category colours, keyed by category id (never by rank), validated for contiguous
+pairs in light and dark: `--cat-retrieval` blue, `--cat-agents` orange, `--cat-pipelines`
+teal, `--cat-finetune` gold, `--cat-safety` magenta, `--cat-vision` green,
+`--cat-foundations` violet. Only the first three pass every pair, so charts group by
+category and always carry direct labels or a table.
+
+Three section washes (`--wash-*`, lightness near 0.96) with a matching `--accent-*`, applied
+by `.wash-*`, which sets `--accent` for the section: Index apricot, Trajectory lilac. Hero
+and Methodology have no wash.
 
 Dark mode: tokens redefined under `@media (prefers-color-scheme: dark)` guarded by
-`:root:not([data-theme="light"])`, and again under `:root[data-theme="dark"]`. A toggle in
-the nav sets `data-theme` and remembers it in `localStorage` (wrapped in try/catch).
+`:root:not([data-theme="light"])`, and again under `:root[data-theme="dark"]`. The nav toggle
+sets `data-theme` and remembers it in `localStorage` (in try/catch).
 
-Type, self-hosted with `@fontsource`:
-- Display: Instrument Serif 400 (and italic) for h1/h2 and big numbers in tiles.
-- UI: Inter variable, 15px base, 1.55 line height.
-- Data: JetBrains Mono for every number, axis tick and code-like label.
+## Type (self-hosted `@fontsource-variable`)
 
-Shape: cards `border: 1px solid var(--line)`, radius 14px, no shadows. Pills (buttons,
-tabs, chips) radius 999px. Primary button is ink on bg (inverted). Section markers are a
-10px ink square before the h2, like a figure label.
+- `--font-display`: Funnel Display, 550 to 750, titles and direct chart labels. Titles use
+  `letter-spacing: -0.02em` and line height 1.05.
+- `--font-ui`: Funnel Sans, 400 and 550, body text.
+- `--font-data`: Martian Mono, every axis, tick, date and code-like label, tabular numerals.
+- `--font-score`: Doto 800, a dot-matrix face used only for big scoreboard numbers (hero
+  rose, production counters, section stats, the card index).
+- Scale `--fs-1..--fs-7`: 12, 13, 16, 20, 28, 40, `clamp(44px, 6vw, 80px)`; Doto 64 to 96.
 
-Layout: max width 1180px, 24px gutter (16px under 640px), sections separated by 120px.
-No horizontal scroll at 360px wide.
+## Layout
 
-## Sections (in order, ids are the anchors)
+12-column grid (`.grid-12`, `.span-*`), max width 1240px, 24px gaps, sections 96px apart
+(56px under 640px). Cards have 28px padding (20px on mobile) and an 18px radius. From 1360px
+a fixed side index shows a square in each section's accent. Everything collapses to one
+column under 900px and has no horizontal scroll at 360px.
 
-1. `#top` Nav: wordmark "Ignacio Diago Valeta" with a 2x2 grid of squares (three category
-   colours plus ink), links to the sections, theme toggle, "CV" pill (links to `profile.links.cv`).
-2. `#hero`: eyebrow `Independent benchmarks · data as of <asOf>` in mono. h1 serif:
-   "Independent analysis of *one* AI engineer." (italic on "one"). Sub: `profile.tagline` +
-   role and location. Two pills: "Explore the index" (anchor) and "CV (PDF)".
-   Below, the **fingerprint**: one slim rounded bar per project (all projects), height =
-   index, colour = category, sorted by creation date, growing in sequence on load. A mono
-   readout above it shows the top project by default and the hovered or focused one
-   (title, category, index, rank); click opens the model card.
-3. Headline tiles, inside the hero: the three `profile.headlines` in one card split into
-   three columns (big serif number + unit, label, source). Count up once when visible.
-4. `#index` "Engineering Index": horizontal bar leaderboard. Toolbar in one row: metric
-   tabs (Index, Commits, Stars, Craft) and category chips (All + the three, each with its
-   colour square). Top 12 by default, "Show all" expands. Bar label left (project title),
-   value at the bar end in mono. Bars 4px rounded at the end, 2px gap. Tooltip on hover,
-   click opens the model card. Colour follows the project's category even when filtered.
-5. `#effort` "Index vs. effort": scatter, x = commits (log scale), y = index (0 to 100).
-   Faint quadrant top-left of the dashed medians, labelled "Most efficient" (high index, low
-   effort). Dots with a 2px surface ring, colour = category, direct labels on the 6
-   highest-index projects (3 under 640px),
-   tooltip on hover, click opens the card. Legend with the three categories.
-6. `#trajectory` "Trajectory": time axis from 2025-01 to asOf, with a "↑ N" counter of
-   projects from the last 12 months in the header. Top lane: roles held since 2025 as
-   neutral bands labelled with the org (current role filled in ink in light mode, outlined in dark mode). Below: cumulative count of public projects as a step line in
-   ink; each project is a dot on the step where it was created, coloured by category.
-   Crosshair tooltip with date, count and the project created then. The line draws left to
-   right when visible.
-7. `#projects` "All projects": the table view of the same data, sortable by any column:
-   rank, project (title + repo), category (square + label), index, commits, stars, updated
-   (relative time), flags (Local, Production). Top 10 with "Show all"; under 640px only
-   rank, project and index remain. Row click opens the card.
-8. `#experience` "Changelog": experience as a vertical changelog (date range in mono, role,
-   org and place, note), then education.
-9. `#methodology` + footer: the index formula in plain words, the data date, contact links
-   (email, GitHub, LinkedIn, Hugging Face, CV).
+## Sections (ids are the anchors)
+
+Four sections. Each curated repo appears once as a row; production sits inside the index.
+
+1. `#hero`, 7 + 5 columns: eyebrow with the name, an h1 naming the three production
+   systems, one-line intro, actions, and one row of three production stats from
+   `profile.headlines` (Doto number, unit, short label, separated by 1px rules). The **rose**
+   sits on the right with a caption: one radial petal per repo, length is the index, colour
+   the category; petals rest desaturated and take full colour on hover or focus.
+2. `#index` (apricot): the leaderboard, a real table and the accessible view of all data.
+   Columns: rank, project (title and full one-liner), category square, shipped badge
+   (Production, Live, Release), 52-week activity strip (category colour, opacity by weekly activity),
+   six craft dots (filled when passed, the tooltip names the check), index bar and value.
+   Tabs re-sort by Index, Depth, Craft, Recency or Shipped with a FLIP transition; category
+   chips filter; top 10 and "Show all N". On mobile the secondary columns drop under the
+   project line. Row click opens the card.
+3. `#trajectory` (lilac), 8 + 4 columns:
+   - **Chart**: cumulative repos from 2025 to the as-of day, a 2px ink step line over a
+     gradient area, one focusable dot per repo in its category colour, a large label for the
+     last value, annotations derived from data (first repo, busiest month, start of the
+     current role), crosshair and tooltip. Role bands sit above the plot with dashed rules
+     to the axis. Under 640px the bands become thin brackets under the axis with short
+     labels staggered in rows so none touch. The plot takes the height of the experience
+     list beside it.
+   - **Experience**: vertical timeline of roles since 2025 and education, notes in full
+     (the Auro AI entry carries the team of four and the engineering standard), current
+     role marked in the accent.
+4. `#methodology` and footer: the formula with the four weights read from `data.weights`,
+   the definitions of depth, craft, recency and shipped, the six craft checks, the data
+   date, and links (email, GitHub, LinkedIn, Hugging Face, CV). No results table.
 
 **Model card** (drawer from the right, full screen under 640px; Esc and backdrop close it,
-focus is trapped and restored, the page behind is inert and does not scroll; `#p/<repo>`
-deep-links to it): title, category, one-liner, stack chips, flags, the index with a mini
-fingerprint locating the project among the rest and its three components as small bars, the
-seven checks, raw metrics (commits, stars, created, last push,
-languages as a thin stacked bar with labels), and links (repository, live site).
+focus is trapped and restored, the page behind is inert; `#p/<repo>` deep-links to it):
+category, title, one-liner, stack chips, flags, the index in Doto with Depth, Craft,
+Recency and Shipped bars (0 to 100), the 52-week strip, the six craft checks as filled or
+hollow dots with an "N of 6" count, one line saying whether it shipped (Production, Live
+site or release, Not shipped), metrics (stars, created, last push), a stacked language bar and links.
 
-## Methodology (computed in `scripts/build-data.mjs`)
+## Methodology (computed in `scripts/build-data.mjs`, formulas in `scripts/lib/metrics.mjs`)
 
-- craft = share of passed checks: README over 1500 characters, licence, CI workflow,
-  tests present, description, at least 3 topics, homepage or release.
-- reach = log10(1 + stars) / log10(1 + max stars across projects).
+- depth = log-scaled size of the commit history, relative to the deepest repo (no commit counts are shown on the site).
+- craft = share of six checks: README over 1500 characters, licence, CI workflow, tests
+  present, description, at least 3 topics.
 - recency = max(0, 1 - months since last push / 24).
-- index = round(100 * (0.5 craft + 0.25 reach + 0.25 recency)).
-- effort = commit count on the default branch (shown, not part of the index).
+- shipped = 1 if the curated flags include "production", 0.6 if there is a live URL or at
+  least one release, else 0.
+- index (v3) = round(100 * (0.40 depth + 0.20 craft + 0.15 recency + 0.25 shipped)). The
+  weights are `INDEX_WEIGHTS` in `metrics.mjs`, the only place they are written; the build
+  copies them to `projects.json` as `weights` and the UI reads them from there.
+- Stars are shown on the card only; they are not part of the index.
 
 ## Accessibility
 
-Every chart is an `<svg role="img">` with an `aria-label` summary, and the table in
-`#projects` is the accessible view of all chart data. Interactive marks are focusable buttons
-or have keyboard equivalents through the table. Contrast of text tokens at least 4.5:1.
+Chart SVGs are groups with an `aria-label` summary, and the leaderboard table is the accessible
+view of the data. Every interactive mark is focusable with an `aria-label` and opens the
+card with Enter or Space. Text tokens meet 4.5:1.

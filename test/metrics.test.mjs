@@ -3,13 +3,18 @@ import assert from 'node:assert/strict';
 
 import {
   checksFromTree,
+  computeFacts,
   craft,
+  depth,
   index,
+  INDEX_WEIGHTS,
   parseLastPage,
-  reach,
   recency,
   retryDelay,
   RETRY_MAX_ATTEMPTS,
+  shipped,
+  statsDecision,
+  STATS_MAX_RETRIES,
 } from '../scripts/lib/metrics.mjs';
 
 const DAY_MS = 86_400_000;
@@ -50,7 +55,7 @@ const fullRepo = {
   homepage: 'https://example.com',
 };
 
-test('checksFromTree: all seven checks pass', () => {
+test('checksFromTree: all seven checks pass (six craft + shipped)', () => {
   const checks = checksFromTree(
     ['.github/workflows/ci.yml', 'tests/test_app.py', 'README.md'],
     fullRepo,
@@ -116,16 +121,34 @@ test('craft: share of passed checks', () => {
   assert.equal(craft(allTrue), 1);
   assert.equal(craft(Object.fromEntries(Object.keys(allTrue).map((k) => [k, false]))), 0);
 
-  const four = { ...allTrue, ci: false, tests: false, shipped: false };
-  close(craft(four), 4 / 7);
+  // shipped is raw data, not a craft check: 6 passing hygiene checks stay 1 either way
+  assert.equal(craft({ ...allTrue, shipped: false }), 1);
+  assert.equal(craft({ shipped: true }), 0);
+
+  const four = { ...allTrue, ci: false, tests: false };
+  close(craft(four), 4 / 6);
+  close(craft({ ...four, shipped: false }), 4 / 6);
 });
 
-test('reach: zero max, zero stars, self and hand-computed value', () => {
-  assert.equal(reach(0, 0), 0);
-  assert.equal(reach(50, 50), 1);
-  assert.equal(reach(0, 100), 0);
-  // log10(1 + 24) / log10(1 + 99) = log10(25) / log10(100) = 1.39794 / 2
-  close(reach(24, 99), Math.log10(25) / Math.log10(100));
+test('shipped: production flag 1, url or release 0.6, else 0', () => {
+  assert.equal(shipped(['production'], null, 0), 1);
+  assert.equal(shipped(['featured', 'production'], 'https://x.dev', 3), 1);
+  assert.equal(shipped(['featured'], 'https://x.dev', 0), 0.6);
+  assert.equal(shipped([], null, 2), 0.6);
+  assert.equal(shipped(['local'], null, true), 0.6);
+  assert.equal(shipped(['local'], null, false), 0);
+  assert.equal(shipped([], '  ', 0), 0);
+  assert.equal(shipped(undefined, undefined, undefined), 0);
+});
+
+test('depth: zero max, zero commits, self and hand-computed value', () => {
+  assert.equal(depth(5, 0), 0);
+  assert.equal(depth(697, 697), 1);
+  assert.equal(depth(0, 100), 0);
+  // log10(1 + 9) / log10(1 + 99) = 1 / 2
+  close(depth(9, 99), 0.5);
+  // log10(1 + 99) / log10(1 + 999) = 2 / 3
+  close(depth(99, 999), 2 / 3);
 });
 
 test('recency: fresh, half-life, expired and clamped, accepts Date now', () => {
@@ -147,15 +170,66 @@ test('recency: fresh, half-life, expired and clamped, accepts Date now', () => {
   assert.equal(recency(iso, iso), 1);
 });
 
-test('index: weighted formula and rounding with hand-computed values', () => {
-  assert.equal(index(1, 1, 1), 100);
-  assert.equal(index(0, 0, 0), 0);
-  // 100 * (0.5*0.5 + 0.25*0.4 + 0.25*0.2) = 100 * 0.4 = 40
-  assert.equal(index(0.5, 0.4, 0.2), 40);
-  // 100 * (0.25 + 0.1 + 0.055) = 40.5 -> 41
-  assert.equal(index(0.5, 0.4, 0.22), 41);
-  // 100 * (0.5*(3/7) + 0.125 + 0.125) = 46.4286 -> 46
-  assert.equal(index(3 / 7, 0.5, 0.5), 46);
+test('index: weighted formula (depth .40, craft .20, recency .15, shipped .25) with hand-computed values', () => {
+  assert.equal(index(1, 1, 1, 1), 100);
+  assert.equal(index(0, 0, 0, 0), 0);
+  // 100 * (0.40*0.5 + 0.20*0.5 + 0.15*0.4 + 0.25*0.6) = 100 * 0.51 = 51
+  assert.equal(index(0.5, 0.5, 0.4, 0.6), 51);
+  // 100 * (0.40*0.6 + 0.20*0.5 + 0.15*0.2 + 0.25*1) = 100 * 0.62 = 62
+  assert.equal(index(0.6, 0.5, 0.2, 1), 62);
+  // 100 * (0.40*1) = 40: depth alone
+  assert.equal(index(1, 0, 0, 0), 40);
+  // 20: craft alone
+  assert.equal(index(0, 1, 0, 0), 20);
+  // 15: recency alone
+  assert.equal(index(0, 0, 1, 0), 15);
+  // 25: shipped alone
+  assert.equal(index(0, 0, 0, 1), 25);
+  // 100 * (0.40*0.5 + 0.20*(4/6) + 0.15*0.5 + 0.25*0.6) = 100 * 0.558333 -> 56
+  assert.equal(index(0.5, 4 / 6, 0.5, 0.6), 56);
+});
+
+const proj = (repo, commits, createdAt, ci, tests, weekly, flags = [], shipped = 0) => ({
+  repo, title: repo.toUpperCase(), commits, createdAt, checks: { ci, tests }, weekly, flags, shipped,
+});
+const weeks = (nonzero) => Array.from({ length: 52 }, (_, i) => (nonzero.includes(i) ? 3 : 0));
+
+test('computeFacts: aggregates computed from the projects', () => {
+  const projects = [
+    proj('a', 100, '2026-02-01T00:00:00Z', true, true, weeks([50, 51]), ['production'], 1),
+    proj('b', 300, '2025-06-01T00:00:00Z', false, true, weeks([51, 10]), ['featured'], 0.6),
+    proj('c', 7, '2026-09-01T00:00:00Z', true, false, weeks([])),
+  ];
+  assert.deepEqual(computeFacts(projects, '2026-11-17'), {
+    totalCommits: 407,
+    repos: 3,
+    reposThisYear: 2,
+    withCi: 2,
+    withTests: 2,
+    shippedCount: 2,
+    productionCount: 1,
+    firstCreatedAt: '2025-06-01T00:00:00Z',
+    topByCommits: { repo: 'b', title: 'B', commits: 300 },
+    activeWeeks: 3, // weeks 10, 50, 51; week 51 is shared and counted once
+  });
+});
+
+test('statsDecision: 200 is done, 202 retries with a 2-3 s pause, then fails loudly', () => {
+  assert.deepEqual(statsDecision({ status: 200, attempt: 1 }), { action: 'done' });
+  assert.equal(STATS_MAX_RETRIES, 6);
+  for (let attempt = 1; attempt <= STATS_MAX_RETRIES; attempt++) {
+    const d = statsDecision({ status: 202, attempt });
+    assert.equal(d.action, 'retry', `attempt ${attempt}`);
+    assert.ok(d.waitMs >= 2000 && d.waitMs <= 3000, `attempt ${attempt}: ${d.waitMs}`);
+  }
+  // 1 request + 6 retries = attempt 7 still 202: give up
+  assert.deepEqual(statsDecision({ status: 202, attempt: STATS_MAX_RETRIES + 1 }), { action: 'fail' });
+});
+
+test('statsDecision: other statuses are never treated as data', () => {
+  for (const status of [204, 404, 500]) {
+    assert.deepEqual(statsDecision({ status, attempt: 1 }), { action: 'fail' }, String(status));
+  }
 });
 
 test('retry policy allows four attempts', () => {
@@ -230,4 +304,17 @@ test('retryDelay: a past reset falls back to backoff and never goes negative', (
     attempt: 2,
   });
   assert.equal(delay, 2000);
+});
+
+test('index uses INDEX_WEIGHTS and the weights sum to 1', () => {
+  const { depth: wd, craft: wc, recency: wr, shipped: ws } = INDEX_WEIGHTS;
+  close(wd + wc + wr + ws, 1);
+  assert.equal(index(1, 0, 0, 0), Math.round(100 * wd));
+  assert.equal(index(0, 1, 0, 0), Math.round(100 * wc));
+  assert.equal(index(0, 0, 1, 0), Math.round(100 * wr));
+  assert.equal(index(0, 0, 0, 1), Math.round(100 * ws));
+  assert.equal(
+    index(0.7, 0.3, 0.9, 0.6),
+    Math.round(100 * (wd * 0.7 + wc * 0.3 + wr * 0.9 + ws * 0.6)),
+  );
 });

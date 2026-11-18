@@ -2,8 +2,11 @@ import '../styles/card.css';
 
 import type { Checks, Dataset, Project } from '../types';
 import { h } from '../lib/dom';
-import { formatCompact } from '../lib/format';
 import { hideTip } from '../lib/tooltip';
+
+// Four tonal steps of the category colour, one per index part (depth, craft, recency, shipped).
+// The leaderboard bar and the card bars share them.
+export const TONES = [100, 72, 50, 32];
 
 const CHECK_LABELS: { key: keyof Checks; label: string }[] = [
   { key: 'readme', label: 'README over 1500 characters' },
@@ -12,7 +15,6 @@ const CHECK_LABELS: { key: keyof Checks; label: string }[] = [
   { key: 'tests', label: 'Tests present' },
   { key: 'description', label: 'Description' },
   { key: 'topics', label: 'At least 3 topics' },
-  { key: 'shipped', label: 'Homepage or release' },
 ];
 
 let dataset: Dataset;
@@ -22,19 +24,22 @@ let catEl: HTMLElement;
 let titleEl: HTMLElement;
 let linerEl: HTMLElement;
 let stackEl: HTMLElement;
-let flagsEl: HTMLElement;
 let scoreNumEl: HTMLElement;
-let fpEl: HTMLElement;
+let weeklyEl: HTMLElement;
+let weeklyLabelEl: HTMLElement;
+let checksLabelEl: HTMLElement;
 let barsEl: HTMLElement;
 let checksEl: HTMLElement;
+let shippedEl: HTMLElement;
 let metricsEl: HTMLElement;
 let langsEl: HTMLElement;
 let linksEl: HTMLElement;
-let opener: HTMLElement | null = null;
+let opener: HTMLElement | SVGElement | null = null;
 let focusables: HTMLElement[] = [];
 let isOpen = false;
 let prevOverflow = '';
 let rootEl: HTMLElement | null = null;
+let currentRepo = '';
 
 function flagLabel(f: string): string {
   return f.charAt(0).toUpperCase() + f.slice(1);
@@ -52,41 +57,39 @@ function fill(p: Project): void {
   titleEl.textContent = p.title;
   linerEl.textContent = p.oneLiner;
 
-  stackEl.innerHTML = '';
-  for (const s of p.stack) stackEl.append(h('span', { class: 'chip' }, s));
-
-  flagsEl.innerHTML = '';
+  // Flags and stack share one wrapping row, so a single flag never sits alone on a line.
   // 'featured' is a curation hint, not a property of the project, so the card does not show it.
-  for (const f of p.flags.filter((x) => x !== 'featured')) flagsEl.append(h('span', { class: 'pill cd-flag' }, flagLabel(f)));
+  stackEl.innerHTML = '';
+  for (const f of p.flags.filter((x) => x !== 'featured')) stackEl.append(h('span', { class: 'pill cd-flag' }, flagLabel(f)));
+  for (const s of p.stack) stackEl.append(h('span', { class: 'chip' }, s));
 
   scoreNumEl.textContent = String(p.index);
 
-  // Mini fingerprint: one slim mark per project, ordered by first commit like
-  // the hero strip. Every mark is --line except this project's, in its category
-  // colour. No text is added; the rank lives in the aria-label.
-  const byDate = [...dataset.projects].sort(
-    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-  );
-  // Rank means position on the index, as in the hero readout; data.projects is sorted by index.
-  const rank = dataset.projects.findIndex((x) => x.repo === p.repo) + 1;
-  fpEl.innerHTML = '';
-  fpEl.setAttribute('aria-label', `Rank ${rank} of ${byDate.length} on the index`);
-  for (const s of byDate) {
-    fpEl.append(
-      h('i', {
-        class: 'cd-fp-mark',
-        style: s.repo === p.repo ? `background:var(--cat-${s.category})` : undefined,
-      }),
-    );
-  }
+  // 52-week activity strip: same cell language as the Activity section, category colour,
+  // opacity by weekly activity, empty weeks in --line.
+  const weekly = p.weekly;
+  const wMax = Math.max(1, ...weekly);
+  weeklyLabelEl.textContent = `Last ${weekly.length} weeks`;
+  weeklyEl.setAttribute('aria-label', `${p.title}: week by week activity over the last ${weekly.length} weeks`);
+  weeklyEl.replaceChildren();
+  weekly.forEach((v, i) => {
+    const cell = h('i', {
+      class: v > 0 ? 'cd-wk' : 'cd-wk zero',
+      title: v > 0 ? 'Active week' : 'Quiet week',
+      style: v > 0 ? `background:var(--cat-${p.category});opacity:${(0.2 + 0.8 * Math.sqrt(v / wMax)).toFixed(2)}` : undefined,
+    });
+    cell.style.setProperty('--c', String(i));
+    weeklyEl.append(cell);
+  });
 
   barsEl.innerHTML = '';
   const components: [string, number][] = [
+    ['Depth', p.depth],
     ['Craft', p.craft],
-    ['Reach', p.reach],
     ['Recency', p.recency],
+    ['Shipped', p.shipped],
   ];
-  for (const [label, value] of components) {
+  components.forEach(([label, value], i) => {
     const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
     barsEl.append(
       h(
@@ -99,29 +102,40 @@ function fill(p: Project): void {
           h('span', { class: 'cd-bar-val num' }, String(pct)),
         ),
         h('span', { class: 'cd-bar-track' },
-          h('i', { class: 'cd-bar-fill', style: `width:${pct}%;background:var(--cat-${p.category})` })),
+          h('i', { class: 'cd-bar-fill', style: `width:${pct}%;background:color-mix(in srgb, var(--cat-${p.category}) ${TONES[i]}%, var(--surface))` })),
       ),
     );
-  }
+  });
 
   checksEl.innerHTML = '';
+  const passed = CHECK_LABELS.filter(({ key }) => p.checks[key]).length;
+  checksLabelEl.textContent = `Craft checks, ${passed} of ${CHECK_LABELS.length}`;
   for (const { key, label } of CHECK_LABELS) {
     const pass = p.checks[key];
     checksEl.append(
       h(
         'li',
         { class: 'cd-check', 'data-pass': String(pass) },
-        h('span', { class: 'cd-check-icon', 'aria-hidden': 'true' }, pass ? '✓' : '–'),
+        h('i', { class: 'cd-check-dot', 'aria-hidden': 'true', style: `--cat:var(--cat-${p.category})` }),
         h('span', { class: 'cd-sr' }, pass ? 'Passed: ' : 'Failed: '),
         h('span', {}, label),
       ),
     );
   }
 
+  shippedEl.replaceChildren(
+    h('span', { class: 'cd-shipped-state' }, p.shipped >= 1 ? 'Production' : p.shipped > 0 ? 'Live site or release' : 'Not shipped'),
+    document.createTextNode(
+      p.shipped >= 1
+        ? '. Used by real users, counts 1.'
+        : p.shipped > 0
+          ? '. Has a live site or a release, counts 0.6.'
+          : '. No live site and no release, counts 0.',
+    ),
+  );
+
   metricsEl.innerHTML = '';
   const metrics: [string, string][] = [
-    ['Commits', formatCompact(p.commits)],
-    ['Stars', formatCompact(p.stars)],
     ['Created', p.createdAt.slice(0, 10)],
     ['Last push', p.pushedAt.slice(0, 10)],
   ];
@@ -228,47 +242,101 @@ function setSiblingsInert(on: boolean): void {
   }
 }
 
+// The title of the leaderboard row for this repo, when it is on screen: the shared element of the morph.
+function rowTitleFor(repo: string): HTMLElement | null {
+  const row = document.querySelector<HTMLElement>(`.lb-row[data-repo="${CSS.escape(repo)}"]`);
+  const t = row?.isConnected ? row.querySelector<HTMLElement>('.lb-title') : null;
+  if (!t) return null;
+  const r = t.getBoundingClientRect();
+  return r.bottom > 0 && r.top < window.innerHeight ? t : null;
+}
+
+const NAME = 'view-transition-name';
+
+// Runs update inside a view transition where the row title and the card title share one name, only
+// for the length of the transition. Without the API, with reduced motion or with no row on screen, it just runs.
+function morph(repo: string, opening: boolean, update: () => void): void {
+  const rowTitle = rowTitleFor(repo);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!rowTitle || reduced || !document.startViewTransition) {
+    update();
+    return;
+  }
+  const [from, to] = opening ? [rowTitle, titleEl] : [titleEl, rowTitle];
+  // The drawer must be in place at once: the transition does the moving, not the slide.
+  drawer.classList.add('cd-vt');
+  backdrop.classList.add('cd-vt');
+  document.documentElement.dataset.vt = opening ? 'card' : 'card-close';
+  from.style.setProperty(NAME, 'card-title');
+  const t = document.startViewTransition(() => {
+    update();
+    from.style.removeProperty(NAME);
+    to.style.setProperty(NAME, 'card-title');
+  });
+  void t.finished.finally(() => {
+    rowTitle.style.removeProperty(NAME);
+    titleEl.style.removeProperty(NAME);
+    drawer.classList.remove('cd-vt');
+    backdrop.classList.remove('cd-vt');
+    delete document.documentElement.dataset.vt;
+  });
+}
+
 export function openCard(repo: string): void {
   const p = dataset.projects.find((x) => x.repo === repo);
   if (!p) return;
 
   hideTip();
 
+  const show = (): void => {
+    fill(p);
+    history.replaceState(null, '', `#p/${encodeURIComponent(p.repo)}`);
+
+    backdrop.classList.add('is-open');
+    drawer.classList.add('is-open');
+    drawer.toggleAttribute('inert', false);
+    drawer.setAttribute('aria-hidden', 'false');
+    document.documentElement.style.overflow = 'hidden';
+    drawer.querySelector<HTMLElement>('.cd-close')?.focus();
+  };
+
   if (!isOpen) {
-    opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // A rose petal is an SVG <g>, so SVGElement counts as an opener too.
+    opener = document.activeElement instanceof HTMLElement || document.activeElement instanceof SVGElement ? document.activeElement : null;
     prevOverflow = document.documentElement.style.overflow;
     document.addEventListener('keydown', onKeydown);
     setSiblingsInert(true);
+    currentRepo = p.repo;
+    isOpen = true;
+    morph(p.repo, true, show);
+  } else {
+    currentRepo = p.repo;
+    show();
   }
-
-  fill(p);
-  history.replaceState(null, '', `#p/${encodeURIComponent(p.repo)}`);
-
-  backdrop.classList.add('is-open');
-  drawer.classList.add('is-open');
-  drawer.toggleAttribute('inert', false);
-  drawer.setAttribute('aria-hidden', 'false');
-  document.documentElement.style.overflow = 'hidden';
-  isOpen = true;
-
-  drawer.querySelector<HTMLElement>('.cd-close')?.focus();
 }
 
 function closeCard(): void {
   if (!isOpen) return;
-
-  drawer.classList.remove('is-open');
-  backdrop.classList.remove('is-open');
-  drawer.toggleAttribute('inert', true);
-  drawer.setAttribute('aria-hidden', 'true');
-  document.documentElement.style.overflow = prevOverflow;
-  document.removeEventListener('keydown', onKeydown);
-  setSiblingsInert(false);
-  history.replaceState(null, '', location.pathname + location.search);
   isOpen = false;
+  document.removeEventListener('keydown', onKeydown);
 
-  if (opener && document.contains(opener)) opener.focus();
-  opener = null;
+  const repo = currentRepo;
+  morph(currentRepo, false, () => {
+    drawer.classList.remove('is-open');
+    backdrop.classList.remove('is-open');
+    drawer.toggleAttribute('inert', true);
+    drawer.setAttribute('aria-hidden', 'true');
+    document.documentElement.style.overflow = prevOverflow;
+    setSiblingsInert(false);
+    history.replaceState(null, '', location.pathname + location.search);
+    // Focus goes back to whatever opened the card, even a roving-tabindex petal with tabindex=-1.
+    // Only when that element is gone (a redraw) does it fall back to the rose or the repo's row.
+    const target: HTMLElement | SVGElement | null = opener && opener.isConnected
+      ? opener
+      : document.querySelector<HTMLElement>(`.lb-row[data-repo="${CSS.escape(repo)}"]`) ?? document.querySelector<HTMLElement>('.rose-petal[tabindex="0"], .rose');
+    target?.focus();
+    opener = null;
+  });
 }
 
 export function initCard(root: HTMLElement, data: Dataset): void {
@@ -294,11 +362,13 @@ export function initCard(root: HTMLElement, data: Dataset): void {
   titleEl = h('h2', { class: 'cd-title', id: 'cd-title' });
   linerEl = h('p', { class: 'cd-liner' });
   stackEl = h('div', { class: 'cd-chips' });
-  flagsEl = h('div', { class: 'cd-flags' });
   scoreNumEl = h('div', { class: 'cd-score-num' });
-  fpEl = h('div', { class: 'cd-fp', role: 'img', 'aria-label': '' });
+  weeklyEl = h('div', { class: 'cd-weekly', role: 'img', 'aria-label': '' });
+  weeklyLabelEl = h('div', { class: 'cd-label' });
+  checksLabelEl = h('div', { class: 'cd-label' });
   barsEl = h('div', { class: 'cd-bars' });
   checksEl = h('ul', { class: 'cd-checks' });
+  shippedEl = h('p', { class: 'cd-shipped' });
   metricsEl = h('div', { class: 'cd-metrics' });
   langsEl = h('div', { class: 'cd-langs' });
   linksEl = h('div', { class: 'cd-links' });
@@ -307,14 +377,10 @@ export function initCard(root: HTMLElement, data: Dataset): void {
     'section',
     { class: 'cd-section' },
     h('div', { class: 'cd-label' }, 'Engineering index'),
-    h('div', { class: 'cd-score-row' }, h('div', { class: 'cd-score-mark' }, scoreNumEl, fpEl), barsEl),
+    h('div', { class: 'cd-score-row' }, scoreNumEl, barsEl),
   );
-  const checksSection = h(
-    'section',
-    { class: 'cd-section' },
-    h('div', { class: 'cd-label' }, 'Checks'),
-    checksEl,
-  );
+  const activitySection = h('section', { class: 'cd-section' }, weeklyLabelEl, weeklyEl);
+  const checksSection = h('section', { class: 'cd-section' }, checksLabelEl, checksEl, shippedEl);
   const metricsSection = h(
     'section',
     { class: 'cd-section' },
@@ -334,8 +400,8 @@ export function initCard(root: HTMLElement, data: Dataset): void {
     titleEl,
     linerEl,
     stackEl,
-    flagsEl,
     scoreSection,
+    activitySection,
     checksSection,
     metricsSection,
     langsSection,
