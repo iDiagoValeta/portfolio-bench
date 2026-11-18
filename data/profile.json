@@ -8,13 +8,13 @@
     "linkedin": "https://www.linkedin.com/in/ignacio-diago-valeta-1234567891011121314/",
     "huggingface": "https://huggingface.co/nadiva1243",
     "email": "nadiva1243@gmail.com",
-    "cv": "https://github.com/iDiagoValeta/resume/raw/main/resume.pdf"
+    "cv": "https://github.com/iDiagoValeta/resume/raw/master/resume.pdf"
   },
   "headlines": [
     {
-      "value": "0",
-      "unit": "external APIs",
-      "label": "In MonkeyGrab, my final degree project at UPV: multimodal RAG on local hardware",
+      "value": "3",
+      "unit": "languages",
+      "label": "MonkeyGrab, my final degree project at UPV, answers over your PDFs in English, Spanish and Valencian, on your own hardware",
       "source": "UPV, 2026"
     },
     {
