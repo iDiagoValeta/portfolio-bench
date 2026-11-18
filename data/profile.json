@@ -12,10 +12,16 @@
   },
   "headlines": [
     {
-      "value": "6",
-      "unit": "apps",
-      "label": "In the TypeScript monorepo I owned at Auro AI",
-      "source": "Auro AI, 2026"
+      "value": "0",
+      "unit": "external APIs",
+      "label": "In MonkeyGrab, my final degree project at UPV: multimodal RAG on local hardware",
+      "source": "UPV, 2026"
+    },
+    {
+      "value": "3",
+      "unit": "universities",
+      "label": "Served by GPT-CEU, the web and WhatsApp assistant I built at Grupo CEU",
+      "source": "Grupo CEU, 2025 to 2026"
     },
     {
       "value": "4",
@@ -31,7 +37,7 @@
       "role": "AI Engineer",
       "org": "Inditex",
       "place": "A Coruña",
-      "note": "Inditex technology graduate program."
+      "note": "Joined the Inditex technology graduate program."
     },
     {
       "from": "2026-06",
@@ -39,7 +45,7 @@
       "role": "Technical Lead",
       "org": "Auro AI",
       "place": "Valencia",
-      "note": "An assistant that reads energy and telecom bills over WhatsApp and switches users to the best tariff. Owned the back end and the engineering standard for a team of four."
+      "note": "Led the technical development of a WhatsApp assistant that reads energy and telecom bills and switches users to the best tariff. Owned the back end and set the engineering standard for a team of four."
     },
     {
       "from": "2025-10",
@@ -47,7 +53,7 @@
       "role": "AI & Back-End Developer",
       "org": "Grupo CEU",
       "place": "Valencia",
-      "note": "Built GPT-CEU for three universities over web and WhatsApp, wired to institutional data through Azure Functions and RAG."
+      "note": "Built and deployed GPT-CEU, a generative assistant for the group's three universities over web and WhatsApp, wired to institutional data through Azure Functions and RAG. Also built the OCR to CRM pipeline that replaced manual digitization of enrollment forms, in production."
     },
     {
       "from": "2025-02",
@@ -70,7 +76,8 @@
     {
       "year": "2026",
       "title": "Computer Engineering, Computing specialization",
-      "org": "Universitat Politècnica de València"
+      "org": "Universitat Politècnica de València",
+      "note": "Final degree project: MonkeyGrab, a multimodal RAG over PDFs that runs entirely on local hardware, with no external APIs."
     },
     {
       "year": "2026",

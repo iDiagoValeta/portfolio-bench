@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   checksFromTree,
+  codeSize,
+  complexity,
   computeFacts,
   craft,
   depth,
@@ -170,23 +172,114 @@ test('recency: fresh, half-life, expired and clamped, accepts Date now', () => {
   assert.equal(recency(iso, iso), 1);
 });
 
-test('index: weighted formula (depth .40, craft .20, recency .15, shipped .25) with hand-computed values', () => {
-  assert.equal(index(1, 1, 1, 1), 100);
-  assert.equal(index(0, 0, 0, 0), 0);
-  // 100 * (0.40*0.5 + 0.20*0.5 + 0.15*0.4 + 0.25*0.6) = 100 * 0.51 = 51
-  assert.equal(index(0.5, 0.5, 0.4, 0.6), 51);
-  // 100 * (0.40*0.6 + 0.20*0.5 + 0.15*0.2 + 0.25*1) = 100 * 0.62 = 62
-  assert.equal(index(0.6, 0.5, 0.2, 1), 62);
-  // 100 * (0.40*1) = 40: depth alone
-  assert.equal(index(1, 0, 0, 0), 40);
-  // 20: craft alone
-  assert.equal(index(0, 1, 0, 0), 20);
-  // 15: recency alone
-  assert.equal(index(0, 0, 1, 0), 15);
-  // 25: shipped alone
-  assert.equal(index(0, 0, 0, 1), 25);
-  // 100 * (0.40*0.5 + 0.20*(4/6) + 0.15*0.5 + 0.25*0.6) = 100 * 0.558333 -> 56
-  assert.equal(index(0.5, 4 / 6, 0.5, 0.6), 56);
+test('index: weighted formula (complexity .40, depth .20, craft .15, shipped .15, recency .10) with hand-computed values', () => {
+  const all = (v) => ({ complexity: v, depth: v, craft: v, shipped: v, recency: v });
+  assert.equal(index(all(1)), 100);
+  assert.equal(index(all(0)), 0);
+  assert.equal(index({}), 0);
+  assert.equal(index(undefined), 0);
+  // each part alone scores its weight
+  assert.equal(index({ complexity: 1 }), 40);
+  assert.equal(index({ depth: 1 }), 20);
+  assert.equal(index({ craft: 1 }), 15);
+  assert.equal(index({ shipped: 1 }), 15);
+  assert.equal(index({ recency: 1 }), 10);
+  // 100 * (0.40*0.5 + 0.20*0.5 + 0.15*0.5 + 0.15*0.6 + 0.10*0.4) = 100 * 0.505 -> 51 (rounds half up)
+  assert.equal(index({ complexity: 0.5, depth: 0.5, craft: 0.5, shipped: 0.6, recency: 0.4 }), 51);
+  // 100 * (0.40*1 + 0.20*1 + 0.15*1 + 0.15*0.6 + 0.10*1) = 100 * 0.94 = 94
+  assert.equal(index({ complexity: 1, depth: 1, craft: 1, shipped: 0.6, recency: 1 }), 94);
+  // 100 * (0.40*0.25 + 0.20*0.5 + 0.15*(4/6) + 0.15*0 + 0.10*0.5) = 100 * 0.35 = 35
+  assert.equal(index({ complexity: 0.25, depth: 0.5, craft: 4 / 6, shipped: 0, recency: 0.5 }), 35);
+});
+
+test('index: scope outweighs tidiness, a tiny tidy shipped repo cannot beat a large deep one', () => {
+  const large = index({ complexity: 1, depth: 1, craft: 0.5, shipped: 0, recency: 0.5 });
+  const tidy = index({ complexity: 0.1, depth: 0.2, craft: 1, shipped: 1, recency: 1 });
+  assert.ok(large > tidy, `${large} <= ${tidy}`);
+});
+
+test('complexity: square root of code size against the largest repo', () => {
+  assert.equal(complexity(100, 0), 0);
+  assert.equal(complexity(0, 100), 0);
+  assert.equal(complexity(400, 400), 1);
+  close(complexity(100, 400), 0.5);
+  close(complexity(1, 100), 0.1);
+  assert.equal(complexity(-5, 100), 0);
+});
+
+const blob = (path, size) => ({ path, size });
+
+test('codeSize: counts programming-language files, tests included', () => {
+  const r = codeSize([
+    blob('src/app.py', 1000),
+    blob('src/web/App.tsx', 500),
+    blob('tests/test_app.py', 300),
+    blob('lib/util.mjs', 200),
+    blob('src/agent.asl', 50),
+  ]);
+  assert.deepEqual(r, { bytes: 2050, files: 5 });
+});
+
+test('codeSize: notebooks, markup, styles, shell, data and lockfiles do not count', () => {
+  const r = codeSize([
+    blob('analysis.ipynb', 9_000_000),
+    blob('index.html', 5000),
+    blob('styles.css', 4000),
+    blob('README.md', 3000),
+    blob('thesis/main.tex', 7000),
+    blob('notebook.nb', 8000),
+    blob('install.sh', 2000),
+    blob('package-lock.json', 200_000),
+    blob('site/_includes/base.njk', 1000),
+    blob('main.py', 10),
+  ]);
+  assert.deepEqual(r, { bytes: 10, files: 1 });
+});
+
+test('codeSize: build output, dependencies and data folders do not count', () => {
+  const r = codeSize([
+    blob('plugin/dist/index.js', 700_000),
+    blob('node_modules/x/index.js', 1000),
+    blob('vendor/lib.c', 1000),
+    blob('src/data/templates.js', 280_000),
+    blob('presentation/assets/engine.js', 1000),
+    blob('tests/fixtures/sample.py', 1000),
+    blob('src/index.ts', 42),
+  ]);
+  assert.deepEqual(r, { bytes: 42, files: 1 });
+});
+
+test('codeSize: generated files do not count', () => {
+  const r = codeSize([
+    blob('web/vendor.min.js', 1000),
+    blob('hooks/colors.d.ts', 1000),
+    blob('proto/api_pb2.py', 1000),
+    blob('lex.yy.c', 1000),
+    blob('y.tab.c', 1000),
+    blob('y.tab.h', 1000),
+    blob('app.js', 7),
+  ]);
+  assert.deepEqual(r, { bytes: 7, files: 1 });
+});
+
+test('codeSize: flex and bison output named after a grammar is left out, the grammar counts', () => {
+  // MiniC-Compiler: asin.y and alex.l generate asin.c, asin.h and alex.c.
+  const r = codeSize([
+    blob('src/asin.y', 10_000),
+    blob('src/alex.l', 2000),
+    blob('asin.c', 70_000),
+    blob('alex.c', 51_000),
+    blob('include/asin.h', 3500),
+    blob('src/principal.c', 2000),
+    blob('include/header.h', 1500),
+  ]);
+  assert.deepEqual(r, { bytes: 15_500, files: 4 });
+});
+
+test('codeSize: empty or missing input', () => {
+  assert.deepEqual(codeSize([]), { bytes: 0, files: 0 });
+  assert.deepEqual(codeSize(undefined), { bytes: 0, files: 0 });
+  assert.deepEqual(codeSize([{ path: 'a.py' }]), { bytes: 0, files: 1 });
 });
 
 const proj = (repo, commits, createdAt, ci, tests, weekly, flags = [], shipped = 0) => ({
@@ -306,15 +399,17 @@ test('retryDelay: a past reset falls back to backoff and never goes negative', (
   assert.equal(delay, 2000);
 });
 
-test('index uses INDEX_WEIGHTS and the weights sum to 1', () => {
-  const { depth: wd, craft: wc, recency: wr, shipped: ws } = INDEX_WEIGHTS;
-  close(wd + wc + wr + ws, 1);
-  assert.equal(index(1, 0, 0, 0), Math.round(100 * wd));
-  assert.equal(index(0, 1, 0, 0), Math.round(100 * wc));
-  assert.equal(index(0, 0, 1, 0), Math.round(100 * wr));
-  assert.equal(index(0, 0, 0, 1), Math.round(100 * ws));
+test('index uses INDEX_WEIGHTS, the weights sum to 1 and scope leads', () => {
+  const w = INDEX_WEIGHTS;
+  assert.deepEqual(Object.keys(w), ['complexity', 'depth', 'craft', 'shipped', 'recency']);
+  close(Object.values(w).reduce((a, b) => a + b, 0), 1);
+  for (const key of Object.keys(w)) assert.equal(index({ [key]: 1 }), Math.round(100 * w[key]), key);
+  const parts = { complexity: 0.7, depth: 0.3, craft: 0.9, shipped: 0.6, recency: 0.2 };
   assert.equal(
-    index(0.7, 0.3, 0.9, 0.6),
-    Math.round(100 * (wd * 0.7 + wc * 0.3 + wr * 0.9 + ws * 0.6)),
+    index(parts),
+    Math.round(100 * Object.keys(w).reduce((sum, k) => sum + w[k] * parts[k], 0)),
   );
+  // complexity is the heaviest single part, and complexity plus depth outweigh the rest
+  assert.ok(Object.values(w).every((v) => v <= w.complexity));
+  assert.ok(w.complexity + w.depth > w.craft + w.shipped + w.recency);
 });

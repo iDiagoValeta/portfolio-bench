@@ -1,0 +1,125 @@
+/* Proof media: row thumbnails and the demo at the top of the project card. */
+
+/* Terminal colours are the same in both themes: a terminal is dark wherever it is shown. */
+:root {
+  --term-bg: #161614;
+  --term-bar: #22211e;
+  --term-ink: #e9e7e0;
+  --term-dim: #8f8c84;
+  --term-ok: #8cc084;
+  --term-err: #ee8a6c;
+  --term-warn: #e4bc5c;
+  --term-accent: #9cbcf4;
+}
+
+/* Thumbnail */
+.md-thumb {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 112px;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+  isolation: isolate;
+}
+.md-thumb img, .md-thumb video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  transition: transform var(--dur-2, 320ms) var(--ease-out, ease), filter var(--dur-2, 320ms) ease;
+}
+.md-thumb video { opacity: 0; transition: opacity var(--dur-1, 160ms) ease; }
+.md-thumb.is-playing video { opacity: 1; }
+.md-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+  pointer-events: none;
+}
+.lb-row:hover .md-thumb img, .lb-row:focus-visible .md-thumb img { transform: scale(1.06); }
+
+/* Play mark on video thumbnails, gone while the preview plays. */
+.md-thumb-play {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  backdrop-filter: blur(4px);
+  transition: opacity var(--dur-1, 160ms) ease;
+}
+.md-thumb-play::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 5px;
+  border-left: 6px solid #fff;
+  border-block: 4px solid transparent;
+}
+.md-thumb.is-playing .md-thumb-play { opacity: 0; }
+
+/* Demo in the card */
+.md-demo { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.md-media { display: block; width: 100%; height: auto; border-radius: 12px; background: color-mix(in srgb, var(--ink) 6%, var(--surface)); }
+.md-frame {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px color-mix(in srgb, var(--ink) 45%, transparent);
+  cursor: zoom-in;
+}
+.md-frame .md-media { border-radius: 0; transition: transform var(--dur-3, 560ms) var(--ease-out, ease); }
+.md-frame:hover .md-media { transform: scale(1.02); }
+.md-frame.md-tall { position: relative; max-height: 440px; }
+.md-frame.md-tall .md-media { object-fit: cover; object-position: top; max-height: 440px; }
+.md-frame.md-tall::after {
+  content: 'Open full size';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 36px 14px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink);
+  background: linear-gradient(transparent, var(--surface) 70%);
+}
+.md-demo-video .md-media { box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px color-mix(in srgb, var(--ink) 45%, transparent); }
+.md-frame:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.md-cap { display: flex; flex-direction: column; gap: 4px; }
+.md-cap-text { font-size: 14px; line-height: 1.45; color: var(--ink); text-wrap: pretty; }
+.md-source { font-family: var(--font-data); font-size: 11px; line-height: 1.5; color: var(--ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .md-thumb img, .md-frame .md-media { transition: none; }
+  .lb-row:hover .md-thumb img, .md-frame:hover .md-media { transform: none; }
+}
+
+.md-thumb-none { visibility: hidden; }
+/* Tall recordings (a chat panel) stay inside the card's first screen. */
+.md-demo-video .md-media { max-height: min(72vh, 620px); object-fit: contain; background: var(--term-bg); }
+.md-actions { display: flex; gap: 8px; margin-top: 2px; }
+.md-full {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink);
+  cursor: pointer;
+}
+.md-full:hover { border-color: var(--ink-3); }
+.md-full:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }

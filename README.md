@@ -20,7 +20,9 @@ pnpm test      # node --test test/*.test.mjs
 node scripts/build-data.mjs
 ```
 
-The script reads `data/curation.json`, queries the GitHub API and writes `src/data/projects.json`.
+The script reads `data/curation.json`, queries the GitHub API (metadata, git tree with file
+sizes, own commits, releases, languages, weekly activity) and writes `src/data/projects.json`
+with the index of every repo.
 It uses `GITHUB_TOKEN` if set, otherwise `gh auth token`. Add or remove a project by editing
 `data/curation.json`; CV facts, headlines and links live in `data/profile.json`.
 
@@ -31,6 +33,8 @@ It uses `GITHUB_TOKEN` if set, otherwise `gh auth token`. Add or remove a projec
 | `src/` | App source (sections, styles, libs) |
 | `data/curation.json` | Curated project list |
 | `data/profile.json` | CV facts, headlines, links |
+| `data/media.json` | One proof per project: video, image or recorded terminal session |
+| `public/media/` | The media files and terminal casts it points to |
 | `scripts/build-data.mjs` | Build-time GitHub data fetch and scoring |
 | `DESIGN.md` | Design system and methodology |
 | `dist/` | Static build output |

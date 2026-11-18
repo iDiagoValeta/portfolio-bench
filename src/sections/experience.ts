@@ -59,6 +59,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
         h('p', { class: 'xp-date mono' }, ed.year),
         h('h3', { class: 'xp-role xp-role--edu' }, ed.title),
         h('p', { class: 'xp-org' }, ed.org),
+        ed.note && h('p', { class: 'xp-note' }, ed.note),
       ),
     );
   });

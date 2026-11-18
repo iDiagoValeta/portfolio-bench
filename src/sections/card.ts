@@ -3,10 +3,11 @@ import '../styles/card.css';
 import type { Checks, Dataset, Project } from '../types';
 import { h } from '../lib/dom';
 import { hideTip } from '../lib/tooltip';
+import { buildDemo, mediaFor } from '../lib/media';
 
-// Four tonal steps of the category colour, one per index part (depth, craft, recency, shipped).
-// The leaderboard bar and the card bars share them.
-export const TONES = [100, 72, 50, 32];
+// Five tonal steps of the category colour, one per index part in INDEX_WEIGHTS order
+// (complexity, depth, craft, shipped, recency). The leaderboard bar and the card bars share them.
+export const TONES = [100, 78, 58, 42, 28];
 
 const CHECK_LABELS: { key: keyof Checks; label: string }[] = [
   { key: 'readme', label: 'README over 1500 characters' },
@@ -23,6 +24,8 @@ let backdrop: HTMLElement;
 let catEl: HTMLElement;
 let titleEl: HTMLElement;
 let linerEl: HTMLElement;
+let demoEl: HTMLElement;
+let stopDemo: () => void = () => {};
 let stackEl: HTMLElement;
 let scoreNumEl: HTMLElement;
 let weeklyEl: HTMLElement;
@@ -57,6 +60,18 @@ function fill(p: Project): void {
   titleEl.textContent = p.title;
   linerEl.textContent = p.oneLiner;
 
+  // The proof comes right after the one-liner: what the project does, before how it scores.
+  stopDemo();
+  stopDemo = () => {};
+  demoEl.replaceChildren();
+  const m = mediaFor(p.repo);
+  demoEl.hidden = !m;
+  if (m) {
+    const demo = buildDemo(m);
+    stopDemo = demo.stop;
+    demoEl.append(demo.el);
+  }
+
   // Flags and stack share one wrapping row, so a single flag never sits alone on a line.
   // 'featured' is a curation hint, not a property of the project, so the card does not show it.
   stackEl.innerHTML = '';
@@ -84,10 +99,11 @@ function fill(p: Project): void {
 
   barsEl.innerHTML = '';
   const components: [string, number][] = [
+    ['Complexity', p.complexity],
     ['Depth', p.depth],
     ['Craft', p.craft],
-    ['Recency', p.recency],
     ['Shipped', p.shipped],
+    ['Recency', p.recency],
   ];
   components.forEach(([label, value], i) => {
     const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
@@ -321,6 +337,7 @@ function closeCard(): void {
   document.removeEventListener('keydown', onKeydown);
 
   const repo = currentRepo;
+  stopDemo();
   morph(currentRepo, false, () => {
     drawer.classList.remove('is-open');
     backdrop.classList.remove('is-open');
@@ -361,6 +378,7 @@ export function initCard(root: HTMLElement, data: Dataset): void {
 
   titleEl = h('h2', { class: 'cd-title', id: 'cd-title' });
   linerEl = h('p', { class: 'cd-liner' });
+  demoEl = h('section', { class: 'cd-demo', 'aria-label': 'Demo' });
   stackEl = h('div', { class: 'cd-chips' });
   scoreNumEl = h('div', { class: 'cd-score-num' });
   weeklyEl = h('div', { class: 'cd-weekly', role: 'img', 'aria-label': '' });
@@ -399,13 +417,14 @@ export function initCard(root: HTMLElement, data: Dataset): void {
     { class: 'cd-body' },
     titleEl,
     linerEl,
+    demoEl,
+    linksEl,
     stackEl,
     scoreSection,
     activitySection,
     checksSection,
     metricsSection,
     langsSection,
-    linksEl,
   );
   drawer.append(head, body);
 

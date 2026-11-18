@@ -61,7 +61,44 @@ export function shipped(flags, url, releases) {
   return Boolean(String(url ?? '').trim()) || hasRelease ? 0.6 : 0;
 }
 
-// Engineering depth: log-scaled commit count relative to the deepest curated repo.
+// Source code: files in a programming language, tests included. Notebooks, markup,
+// styles, shell, data and lockfiles have no code extension here, so they never count.
+const CODE_EXT = /\.(py|pyi|ts|tsx|mts|cts|js|jsx|mjs|cjs|c|h|cc|cpp|cxx|hpp|java|kt|go|rs|rb|php|cs|swift|scala|r|jl|lua|y|l|sql|vue|svelte|asl)$/i;
+// Build output, dependencies and data folders: code that was generated, copied or is data in code form.
+const SKIP_DIR = /(^|\/)(node_modules|vendor|third_party|dist|build|out|_site|data|fixtures|assets)\//;
+// Files that tools write: minified bundles, type declarations, protobuf stubs, flex and bison output.
+const GENERATED = /(^|\/)(lex\.yy\.c|y\.tab\.[ch]|[^/]+\.min\.js|[^/]+\.d\.ts|[^/]+_pb2(_grpc)?\.py)$/;
+
+const baseName = (path) => path.slice(path.lastIndexOf('/') + 1);
+const stem = (name) => name.replace(/\.[^.]+$/, '');
+
+// Bytes and files of source code in a git tree. `entries` are {path, size} blobs.
+// A .c or .h file named like a grammar in the repo (asin.y -> asin.c, asin.h) is the
+// scanner or parser that flex or bison generated from it, so only the grammar counts.
+export function codeSize(entries) {
+  const list = Array.isArray(entries) ? entries : [];
+  const grammars = new Set(list.filter((e) => /\.(y|l)$/i.test(e.path)).map((e) => stem(baseName(e.path))));
+  let bytes = 0;
+  let files = 0;
+  for (const { path, size } of list) {
+    if (!CODE_EXT.test(path) || SKIP_DIR.test(path) || GENERATED.test(path)) continue;
+    const name = baseName(path);
+    if (/\.[ch]$/i.test(name) && grammars.has(stem(name))) continue;
+    bytes += Number(size) || 0;
+    files++;
+  }
+  return { bytes, files };
+}
+
+// Engineering complexity: square root of the source code size relative to the largest
+// curated repo. The root keeps a big codebase clearly ahead without zeroing small ones.
+export function complexity(codeBytes, maxCodeBytes) {
+  if (!Number.isFinite(maxCodeBytes) || maxCodeBytes <= 0) return 0;
+  return Math.sqrt(Math.max(0, codeBytes) / maxCodeBytes);
+}
+
+// Engineering depth: log-scaled count of the owner's own commits (bots, automations and
+// collaborators excluded) relative to the deepest curated repo.
 export function depth(commits, maxCommits) {
   if (!Number.isFinite(maxCommits) || maxCommits <= 0) return 0;
   return Math.log10(1 + commits) / Math.log10(1 + maxCommits);
@@ -81,14 +118,17 @@ export function recency(pushedAt, now) {
 
 // Single source of the index weights: index() uses them, build-data writes them to
 // projects.json as data.weights, and the leaderboard and methodology read them from there.
-export const INDEX_WEIGHTS = { depth: 0.4, craft: 0.2, recency: 0.15, shipped: 0.25 };
+// Their order is the order the parts are shown and stacked in. Scope first: how much was
+// built (complexity) and how long it was worked on (depth) carry 0.60 of the score.
+export const INDEX_WEIGHTS = { complexity: 0.4, depth: 0.2, craft: 0.15, shipped: 0.15, recency: 0.1 };
 
-// Weighted index on a 0..100 integer scale.
-export function index(depthScore, craftScore, recencyScore, shippedScore) {
-  const w = INDEX_WEIGHTS;
-  return Math.round(
-    100 * (w.depth * depthScore + w.craft * craftScore + w.recency * recencyScore + w.shipped * shippedScore),
-  );
+// Weighted index on a 0..100 integer scale. `parts` holds one 0..1 score per weight key;
+// a missing part counts 0.
+export function index(parts) {
+  const p = parts ?? {};
+  let sum = 0;
+  for (const [key, weight] of Object.entries(INDEX_WEIGHTS)) sum += weight * (Number(p[key]) || 0);
+  return Math.round(100 * sum);
 }
 
 // Aggregate numbers shown in the UI copy. Pure: projects need

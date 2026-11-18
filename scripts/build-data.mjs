@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   checksFromTree,
+  codeSize,
+  complexity as complexityScore,
   computeFacts,
   craft,
   depth,
@@ -95,8 +97,11 @@ async function getJson(path, repo, options) {
   return res ? res.json() : null;
 }
 
+// Commits on the default branch authored by the owner's account. Bots (dependabot, the
+// Actions that publish La Terminal's daily edition) and collaborators are left out, so
+// depth measures the owner's own work.
 async function commitCount(full, repo) {
-  const res = await ghGet(`/repos/${full}/commits?per_page=1`, repo);
+  const res = await ghGet(`/repos/${full}/commits?per_page=1&author=${OWNER}`, repo);
   const last = parseLastPage(res.headers.get('link'));
   if (last !== null) return last;
   const commits = await res.json();
@@ -132,15 +137,18 @@ async function readmeLength(full, repo) {
   return Buffer.from(data.content.replace(/\s/g, ''), 'base64').toString('utf8').length;
 }
 
-async function treePaths(full, repo, defaultBranch) {
+// Every blob in the default branch as {path, size}: paths feed the craft checks, sizes the code measure.
+async function treeEntries(full, repo, defaultBranch) {
   const data = await getJson(`/repos/${full}/git/trees/${encodeURIComponent(defaultBranch)}?recursive=1`, repo);
   if (data?.truncated === true) {
     console.warn(
       `[${repo}] warning: git tree response was truncated; some paths are missing, ` +
-        'so craft checks may be understated.',
+        'so craft checks and code size may be understated.',
     );
   }
-  return Array.isArray(data?.tree) ? data.tree.map((entry) => entry.path) : [];
+  return Array.isArray(data?.tree)
+    ? data.tree.filter((entry) => entry.type === 'blob').map((entry) => ({ path: entry.path, size: entry.size ?? 0 }))
+    : [];
 }
 
 async function languages(full, repo) {
@@ -181,22 +189,23 @@ async function fetchRepo(item) {
   if (meta.private) throw new Error(`[${repo}] curated repo is private`);
 
   const branch = meta.default_branch;
-  const [commits, paths, readmeLen, releases, langs, weekly] = await Promise.all([
+  const [commits, entries, readmeLen, releases, langs, weekly] = await Promise.all([
     commitCount(full, repo),
-    treePaths(full, repo, branch),
+    treeEntries(full, repo, branch),
     readmeLength(full, repo),
     getJson(`/repos/${full}/releases?per_page=1`, repo),
     languages(full, repo),
     weeklyCommits(full, repo),
   ]);
 
-  const checkFlags = checksFromTree(paths, meta, readmeLen, Array.isArray(releases) ? releases.length : 0);
+  const checkFlags = checksFromTree(entries.map((e) => e.path), meta, readmeLen, Array.isArray(releases) ? releases.length : 0);
 
   return {
     item,
     meta,
     metrics: {
       commits,
+      code: codeSize(entries),
       readmeLen,
       releasesCount: Array.isArray(releases) ? releases.length : 0,
       languages: langs,
@@ -213,10 +222,12 @@ async function main() {
 
   const gathered = await pooled(curation.projects, 5, fetchRepo);
 
-  // depth is relative to the deepest curated repo.
+  // complexity and depth are relative to the largest and the deepest curated repo.
+  const maxCodeBytes = gathered.reduce((max, g) => Math.max(max, g.metrics.code.bytes), 0);
   const maxCommits = gathered.reduce((max, g) => Math.max(max, g.metrics.commits), 0);
 
   const projects = gathered.map(({ item, meta, metrics }) => {
+    const complexity = complexityScore(metrics.code.bytes, maxCodeBytes);
     const craftScore = craft(metrics.checks);
     const depthScore = depth(metrics.commits, maxCommits);
     const recencyScore = recency(meta.pushed_at, now);
@@ -234,14 +245,16 @@ async function main() {
       pushedAt: meta.pushed_at,
       stars: meta.stargazers_count ?? 0,
       commits: metrics.commits,
+      codeBytes: metrics.code.bytes,
       languages: metrics.languages,
       checks: metrics.checks,
+      complexity,
       craft: craftScore,
       depth: depthScore,
       weekly: metrics.weekly,
       recency: recencyScore,
       shipped,
-      index: indexScore(depthScore, craftScore, recencyScore, shipped),
+      index: indexScore({ complexity, depth: depthScore, craft: craftScore, shipped, recency: recencyScore }),
     };
   });
 
@@ -251,7 +264,9 @@ async function main() {
   mkdirSync(dirname(OUTPUT), { recursive: true });
   writeFileSync(OUTPUT, `${JSON.stringify(dataset, null, 2)}\n`);
 
-  console.log(`Wrote ${OUTPUT} with ${projects.length} projects (as of ${asOf}, max commits ${maxCommits}).`);
+  console.log(
+    `Wrote ${OUTPUT} with ${projects.length} projects (as of ${asOf}, max code ${maxCodeBytes} bytes, max own commits ${maxCommits}).`,
+  );
 }
 
 main().catch((error) => {

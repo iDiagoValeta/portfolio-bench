@@ -42,10 +42,10 @@ function stat(hd: ProfileHeadline): HTMLElement {
   return el;
 }
 
-// Compact production proof inside the hero: headline numbers from profile.json, one row.
+// Career highlights inside the hero: headline numbers from profile.json (CV facts), one row.
 export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   void data;
-  const row = h('div', { class: 'proof', role: 'list', 'aria-label': 'Production record' });
+  const row = h('div', { class: 'proof', role: 'list', 'aria-label': 'Career highlights' });
   for (const hd of profile.headlines) {
     const item = stat(hd);
     item.setAttribute('role', 'listitem');

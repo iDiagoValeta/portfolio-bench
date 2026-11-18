@@ -39,11 +39,13 @@ export interface Project {
   createdAt: string;            // ISO
   pushedAt: string;             // ISO
   stars: number;
-  commits: number;              // default branch
+  commits: number;              // default branch, authored by the owner's account (no bots, no collaborators)
+  codeBytes: number;            // bytes of source code in the default branch (see codeSize in scripts/lib/metrics.mjs)
   languages: { name: string; bytes: number }[]; // sorted desc
   checks: Checks;
+  complexity: number;           // 0..1, square root of codeBytes relative to the largest curated repo
   craft: number;                // 0..1, share of the six hygiene checks (shipped excluded)
-  depth: number;                // 0..1, log-scaled commits relative to the deepest curated repo
+  depth: number;                // 0..1, log-scaled own commits relative to the deepest curated repo
   weekly: number[];             // 52 weekly commit totals, oldest first
   recency: number;              // 0..1
   shipped: number;              // 0, 0.6 (live url or release) or 1 (flag "production")
@@ -64,9 +66,13 @@ export interface Facts {
   activeWeeks: number;          // of the last 52, weeks with a commit in any repo
 }
 
+// The five parts of the index, in display and stacking order (the key order of INDEX_WEIGHTS).
+export type IndexPart = 'complexity' | 'depth' | 'craft' | 'shipped' | 'recency';
+export type IndexWeights = Record<IndexPart, number>;
+
 export interface Dataset {
   asOf: string;                 // ISO date of the build-data run
-  weights: { depth: number; craft: number; recency: number; shipped: number }; // index weights, from scripts/lib/metrics.mjs
+  weights: IndexWeights;        // index weights, from INDEX_WEIGHTS in scripts/lib/metrics.mjs
   facts: Facts;
   categories: Category[];
   projects: Project[];          // sorted by index desc

@@ -26,6 +26,7 @@ export interface ProfileEducation {
   year: string;
   title: string;
   org: string;
+  note?: string;
 }
 
 export interface Profile {

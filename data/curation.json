@@ -370,15 +370,16 @@
     },
     {
       "repo": "expertPrompting",
-      "title": "Expert Prompting",
+      "title": "PromptArchitect",
       "category": "agents",
       "flags": [],
       "stack": [
-        "JavaScript",
-        "HTML",
-        "CSS"
+        "React",
+        "Vite",
+        "Tailwind"
       ],
-      "oneLiner": "A web tool for writing expert prompts for language models."
+      "oneLiner": "An eight-step wizard that builds structured prompts for Claude, GPT, Gemini and Llama, live in the browser.",
+      "url": "https://idiagovaleta.github.io/expertPrompting/"
     },
     {
       "repo": "ocsky-galaxy",

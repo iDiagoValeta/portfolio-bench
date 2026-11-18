@@ -2,23 +2,16 @@ import '../styles/leaderboard.css';
 
 import { utcFormat } from 'd3-time-format';
 import { scalePow } from 'd3-scale';
-import type { CategoryId, Checks, Dataset, Project } from '../types';
+import type { CategoryId, Checks, Dataset, IndexPart, Project } from '../types';
 import type { Profile } from '../types-profile';
 import { h, onVisible } from '../lib/dom';
 import { showTip, hideTip } from '../lib/tooltip';
 import { asOfDate } from '../lib/format';
 import { openCard, TONES } from './card';
+import { buildThumb, mediaFor } from '../lib/media';
 
 type CatFilter = 'all' | CategoryId;
-type Metric = 'index' | 'depth' | 'craft' | 'recency' | 'shipped';
-
-const METRICS: { id: Metric; label: string }[] = [
-  { id: 'index', label: 'Index' },
-  { id: 'depth', label: 'Depth' },
-  { id: 'craft', label: 'Craft' },
-  { id: 'recency', label: 'Recency' },
-  { id: 'shipped', label: 'Shipped' },
-];
+type Metric = 'index' | IndexPart;
 
 // The six hygiene checks that make up craft, for the count in the row's accessible name.
 const CHECKS: { id: keyof Checks; label: string }[] = [
@@ -39,9 +32,14 @@ function pct(v: number): number {
   return Math.round(v * 100);
 }
 
-// The four parts of the index, in the order the bar stacks them.
-const PARTS = ['depth', 'craft', 'recency', 'shipped'] as const;
-const PART_LABEL: Record<(typeof PARTS)[number], string> = { depth: 'Depth', craft: 'Craft', recency: 'Recency', shipped: 'Shipped' };
+// The five parts of the index, in the order the bar stacks them (heaviest first).
+const PARTS: IndexPart[] = ['complexity', 'depth', 'craft', 'shipped', 'recency'];
+const PART_LABEL: Record<IndexPart, string> = { complexity: 'Complexity', depth: 'Depth', craft: 'Craft', shipped: 'Shipped', recency: 'Recency' };
+
+const METRICS: { id: Metric; label: string }[] = [
+  { id: 'index', label: 'Index' },
+  ...PARTS.map((id) => ({ id, label: PART_LABEL[id] })),
+];
 
 const trimNum = (n: number): string => String(Math.round(n * 10) / 10);
 
@@ -203,6 +201,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     const row = h('div', { class: 'lb-row', role: 'row', tabindex: '0', 'data-repo': p.repo, style: `--c:var(--cat-${p.category})` },
       h('div', { class: 'lb-c lb-c-rank', role: 'cell' }),
       h('div', { class: 'lb-c lb-c-proj', role: 'cell' },
+        h('span', { class: 'lb-thumb-slot' }),
         h('span', { class: 'lb-title' }, p.title),
         h('span', { class: 'lb-desc' }, p.oneLiner),
       ),
@@ -215,9 +214,15 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
         h('span', { class: 'lb-value' }, String(p.index)),
       ),
     );
+    // A glimpse of the real project next to its name; the card shows it in full.
+    const m = mediaFor(p.repo);
+    const slot = row.querySelector('.lb-thumb-slot')!;
+    // Without proof the slot stays as an empty spacer, so every title starts on the same line.
+    if (m) slot.replaceWith(buildThumb(m, row));
+    else slot.className = 'md-thumb md-thumb-none';
     row.setAttribute(
       'aria-label',
-      `${p.title}, ${catLabel(p.category)}. ${k ? SHIPPED_LABEL[k] + '. ' : ''}Index ${p.index}, depth ${pct(p.depth)}, craft ${passed} of ${CHECKS.length} checks, recency ${pct(p.recency)}. Open project card`,
+      `${p.title}, ${catLabel(p.category)}. ${k ? SHIPPED_LABEL[k] + '. ' : ''}Index ${p.index}, complexity ${pct(p.complexity)}, depth ${pct(p.depth)}, craft ${passed} of ${CHECKS.length} checks, recency ${pct(p.recency)}. Open project card`,
     );
     row.addEventListener('click', () => {
       hideTip();

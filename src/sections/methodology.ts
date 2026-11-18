@@ -1,6 +1,6 @@
 import '../styles/experience.css';
 
-import type { Dataset } from '../types';
+import type { Dataset, IndexPart } from '../types';
 import type { Profile } from '../types-profile';
 import { h } from '../lib/dom';
 
@@ -12,13 +12,23 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
   const wt = (v: number): string => v.toFixed(2);
   const pct = (v: number): string => `${Math.round(v * 100)}%`;
 
-  // Plain words first; the weights come from the dataset so they can never drift from the formula.
-  const parts: { key: keyof Dataset['weights']; name: string; plain: string }[] = [
-    { key: 'depth', name: 'Depth', plain: 'How much work went into it, on a log scale against the deepest repo so one giant project does not flatten the rest.' },
-    { key: 'craft', name: 'Craft', plain: `Hygiene: ${CHECKS.join(', ')}. Each check passed counts the same.` },
-    { key: 'recency', name: 'Recency', plain: 'Still alive: full marks for a push this month, fading to zero at 24 months.' },
-    { key: 'shipped', name: 'Shipped', plain: 'In production with real users scores 1, a live site or a release scores 0.6, otherwise 0.' },
-  ];
+  // Plain words first; the weights and their order come from the dataset so they can never drift from the formula.
+  const PLAIN: Record<IndexPart, { name: string; plain: string }> = {
+    complexity: {
+      name: 'Complexity',
+      plain: 'How much source code the repo holds: files in a programming language, tests included, as the square root of their size against the largest repo. Notebooks, markup, styles, shell scripts, data, lockfiles and generated or vendored files do not count.',
+    },
+    depth: {
+      name: 'Depth',
+      plain: 'How long I worked on it: my own commits, on a log scale against the deepest repo. Bots, scheduled automations and collaborators are left out.',
+    },
+    craft: { name: 'Craft', plain: `Hygiene: ${CHECKS.join(', ')}. Each check passed counts the same.` },
+    shipped: { name: 'Shipped', plain: 'In production with real users scores 1, a live site or a release scores 0.6, otherwise 0.' },
+    recency: { name: 'Recency', plain: 'Still alive: full marks for a push this month, fading to zero at 24 months.' },
+  };
+  const keys = Object.keys(w) as IndexPart[];
+  const parts = keys.map((key) => ({ key, ...PLAIN[key] }));
+  const scope = pct(w.complexity + w.depth);
 
   const card = h('div', { class: 'card md-card reveal' });
   const left = h(
@@ -27,7 +37,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     h(
       'p',
       { class: 'md-lead' },
-      'Every public repo gets one score from 0 to 100, built from four parts that favour work that is deep and shipped over work that is only tidy.',
+      `Every public repo gets one score from 0 to 100. Engineering scope comes first: ${scope} of it is how much source code a repo holds and how long I worked on it, the rest is craft, shipping and freshness.`,
     ),
   );
   const list = h('dl', { class: 'md-parts' });
@@ -48,7 +58,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
       'p',
       { class: 'md-formula mono' },
       h('span', { class: 'md-formula-k' }, 'Formula'),
-      `round(100 * (${wt(w.depth)} depth + ${wt(w.craft)} craft + ${wt(w.recency)} recency + ${wt(w.shipped)} shipped))`,
+      `round(100 * (${keys.map((k) => `${wt(w[k])} ${k}`).join(' + ')}))`,
     ),
     list,
   );
@@ -62,7 +72,7 @@ export function mount(el: HTMLElement, data: Dataset, profile: Profile): void {
     h(
       'p',
       { class: 'md-data' },
-      `Repository data comes from the GitHub API, measured on ${data.asOf} and refreshed at every build. Roles and dates come from my CV.`,
+      `Repository data (git trees, commits, releases and metadata) comes from the GitHub API, measured on ${data.asOf} and refreshed at every build. Roles and dates come from my CV.`,
     ),
   );
 
